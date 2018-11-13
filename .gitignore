@@ -1,0 +1,4 @@
+*.pyc
+.vscode/settings.json
+ssd/new_ssd_label_computations.py
+ssd/old_ssd_label_computations.py
