@@ -2,17 +2,7 @@ import numpy as np
 from keras import backend as K
 import tensorflow as tf
 import keras
-
-
-class NetworkLossFunction(object):
-
-    def __call__(self, y_true, y_pred):
-        raise NotImplementedError
-
-
-class CostumMetric(NetworkLossFunction):
-    def __init__(self, mode):
-        self.mode = mode
+from ..costum_loss_functions import CostumMetric, NetworkLossFunction
 
 
 class SSDMetric(CostumMetric):

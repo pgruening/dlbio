@@ -78,7 +78,6 @@ class KerasNeuralNetwork(object):
 
     def setup_cnn(self):
         # NOTE: don't forget to run _save_initial_weights in this function
-        # NOTE: you need to compile the model here
         raise NotImplementedError
 
     def get_output_shape_for_patchwise_processing(self):
@@ -86,34 +85,8 @@ class KerasNeuralNetwork(object):
         raise NotImplementedError
 
     def get_num_classes(self):
-        # default_num = self.cnn.layers[-1].output_shape
+        # default_num = self.cnn.layers[-1].output_shape[-1]
         raise NotImplementedError
-
-    def check_kwargs(self, **kwargs):
-        """When instantiating a neural network, several arguments need to
-        be set. To make sure that the method class that inherits the task
-        takes care of everything, this function needs to be implemented.
-
-        Raises
-        ------
-        NotImplementedError
-
-        """
-        raise NotImplementedError
-
-    def _default_check_kwargs(self, **kwargs):
-        """Check if the default kwargs are met. Raises an error if one is not
-        found.
-
-        """
-        # task kwargs
-        kwargs.get('post_process_fcn')
-        kwargs.get('setup_function')
-
-        # neural network kwargs
-        kwargs.get('model_id')
-        kwargs.get('loss_function')
-        kwargs.get('pre_process_function')
 
     def _predict(self, input, do_pre_proc, predict_patch=False):
         """Compute the keras_model output for a batch or an image. 

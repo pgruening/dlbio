@@ -11,7 +11,7 @@ class IMain(object):
     def evaluate(self, model, generator):
         raise NotImplementedError
 
-    def print_generator(self, model, generator):
+    def print_generator(self, model, generator, save_path):
         raise NotImplementedError
 
     def predict_single_sample(self, model, sample):

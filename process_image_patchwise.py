@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 DEBUG_PATCHWISE_SEGMENTATION = False
+SHOW_IDX = 1
 
 
 def whole_image_segmentation(model, image):
@@ -314,9 +315,9 @@ def patchwise_image_segmentation(network_output_fcn,
                 ax[0].set_title(
                     "Padded image. Red rectangle shows output, blue one input.\
                      Circle shows top_left of output.")
-                ax[1].imshow(network_output[:, :, BORDER_IDX])
+                ax[1].imshow(network_output[:, :, SHOW_IDX])
                 ax[1].set_title("original output of the network")
-                ax[2].imshow(full_output[:, :, BORDER_IDX])
+                ax[2].imshow(full_output[:, :, SHOW_IDX])
                 ax[2].set_title("full output")
                 ax[3].imshow(original_image)
                 ax[3].set_title("original image")

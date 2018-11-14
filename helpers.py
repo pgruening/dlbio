@@ -375,10 +375,12 @@ def cell_labeling(connected_component_image):
         warnings.warn(
             'Input might not be a connected_components image.\
              Values are no integers.')
-    if np.shape(unique_values)[0] < 5:
-        warnings.warn(
-            'Input might not be a connected_components image.\
-             Less than five unique values in the image.')
+
+    # annoying warning when used with cropped data...
+    # if np.shape(unique_values)[0] < 5:
+    #    warnings.warn(
+    #        'Input might not be a connected_components image.\
+    #         Less than five unique values in the image.')
 
     for new_index, current_index in enumerate(unique_values):
         connected_component_image[connected_component_image ==

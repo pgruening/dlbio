@@ -12,6 +12,19 @@ class Fixed():
 
 
 class Step():
+    def __init__(self, learning_rate, decay, step, num_epochs):
+        self.learning_rate = learning_rate
+        self.decay = decay
+        self.step = float(step)
+        self.num_epochs = float(num_epochs)
+
+    def schedule(self, epoch):
+        exponent = np.floor((epoch/(self.num_epochs/self.step)))
+        return self.learning_rate * self.decay**exponent
+
+
+"""
+class Step():
     def __init__(self, learning_rate, decay, step):
         self.learning_rate = learning_rate
         self.decay = decay
@@ -20,6 +33,7 @@ class Step():
     def schedule(self, epoch):
         return self.learning_rate * np.power(
             self.decay, np.floor((1 + epoch) / self.step))
+"""
 
 
 class Rotary():

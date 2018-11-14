@@ -2,37 +2,10 @@ import os
 import keras
 from .uc_Itraining import ITraining
 
+# NOTE: model is compiled during call
+
 
 class KerasTraining(ITraining):
-    """
-    OLD Code...
-    def setup_training(self, do_retrain=False):
-        # need to reset tf-graph to compute several runs
-        if not do_retrain:
-            try:
-                keras.backend.clear_session()
-            except:
-                warnings.warn('Could not clear session.')
-
-            self.setup_cnn()
-
-        kwargs = {'loss': self.loss_function,
-                  'optimizer': self.optimizer
-                  }
-
-        if self.use_accuracy:
-            kwargs.update({'metrics': ['acc']})
-
-        if self.costum_metrics is not None:
-            if 'metrics' in kwargs:
-                kwargs['metrics'].extend(self.costum_metrics)
-            else:
-                kwargs.update({'metrics': self.costum_metrics})
-
-        self.cnn.compile(**kwargs)
-        if not do_retrain:
-            self._save_initial_weights()
-    """
 
     def __call__(self,
                  keras_model,
