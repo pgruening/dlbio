@@ -65,7 +65,8 @@ class KerasTraining(ITraining):
         # Before using the generators, they need to be setup, because some
         # of the functions need information from the keras_model.
         generator_train.setup_augmentation_functions(keras_model)
-        generator_val.setup_augmentation_functions(keras_model)
+        if generator_val is not None:
+            generator_val.setup_augmentation_functions(keras_model)
 
         lr_callback = keras.callbacks.LearningRateScheduler(lr_policy.schedule)
         training_callbacks.append(lr_callback)

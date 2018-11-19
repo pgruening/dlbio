@@ -92,10 +92,10 @@ def get_path_and_ids(folders, match_strings):
 
     Parameters
     ----------
-    folders : [type]
-        [description]
-    match_strings : [type]
-        [description]
+    folders : list of strings
+        paths determining where to search for data
+    match_strings : list of strings
+        strings used for linux globbing (e.g. *.png for all png files)
     Returns
     -------
     tuples: (file_path, file_id)
@@ -113,4 +113,9 @@ def get_path_and_ids(folders, match_strings):
 
         output.extend([(x, file_path_to_ID(x))
                        for x in files])
+    if len(output) == 0:
+        raise ValueError(
+            'ERROR: Could not find any files in the given locations.' +
+            ' Current working dir: {}'.format(os.getcwd())
+        )
     return output
