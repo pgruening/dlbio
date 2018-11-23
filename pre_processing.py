@@ -2,6 +2,7 @@ import cv2
 import keras.applications.densenet as densenet
 import keras.applications.mobilenet as mobilenet
 import keras.applications.vgg16 as vgg16
+import keras.applications.resnet50 as resnet50
 import numpy as np
 
 import DLBio.misc.retinex
@@ -25,6 +26,10 @@ def pref_vgg16(input):
 
 def pref_mobilenet(input):
     return mobilenet.preprocess_input(input.astype('float64'))
+
+
+def pref_resnet50(input):
+    return resnet50.preprocess_input(input.astype('float64'))
 
 
 def pref_retinex(input):

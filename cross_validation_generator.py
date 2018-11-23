@@ -4,6 +4,7 @@ import os
 import random
 
 from .ds_Idata import get_path_and_ids
+import warnings
 
 
 class CrossValidationGenerator(object):
@@ -20,10 +21,14 @@ class CrossValidationGenerator(object):
         ids = self.get_sample_ids()
 
         num_test = int(float(len(ids))*self.percent_test)
-        num_test = max(1, num_test)
+        if num_test == 0:
+            warnings.warn('With a test percentage of {}, no test sample is drawn'.format(
+                self.percent_test))
 
         num_val = int(float(len(ids))*self.percent_val)
-        num_val = max(1, num_val)
+        if num_val == 0:
+            warnings.warn('With a validation percentage of {}, no validation sample is drawn'.format(
+                self.percent_val))
 
         def take_n(seq, n):
             output = []
