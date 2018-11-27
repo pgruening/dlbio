@@ -2,7 +2,7 @@ import numpy as np
 from keras import backend as K
 import tensorflow as tf
 import keras
-from ..costum_loss_functions import CostumMetric, NetworkLossFunction
+from ..costum_loss_functions import CostumMetric, INetworkLossFunction
 
 
 class SSDMetric(CostumMetric):
@@ -100,7 +100,7 @@ def f1_score(true_conf, pred_conf):
     return 2.0*prec*rec/(prec + rec + .00001)
 
 
-class DetectionLoss(NetworkLossFunction):
+class DetectionLoss(INetworkLossFunction):
     def __init__(
             self,
             output_shapes,
@@ -223,7 +223,7 @@ class DetectionLoss(NetworkLossFunction):
 #------------------------------------------------------------------------------#
 
 
-class DetectSegLoss(NetworkLossFunction):
+class DetectSegLoss(INetworkLossFunction):
 
     def __init__(
         self,
@@ -368,7 +368,7 @@ class DetectSegLoss(NetworkLossFunction):
         return loss
 
 
-class SmoothL1(NetworkLossFunction):
+class SmoothL1(INetworkLossFunction):
 
     def __call__(self, y_true, y_pred, is_match=1.0):
         output = is_match*K.abs(y_true - y_pred)
@@ -383,7 +383,7 @@ class SmoothL1(NetworkLossFunction):
         return K.sum(output)
 
 
-class WeightedSparseCategoricalCrossentropy(NetworkLossFunction):
+class WeightedSparseCategoricalCrossentropy(INetworkLossFunction):
 
     def __init__(self,
                  number_of_classes,
@@ -437,14 +437,14 @@ class WeightedSparseCategoricalCrossentropy(NetworkLossFunction):
             return K.sum(y_true)
 
 
-class CategoricalCrossentropy(NetworkLossFunction):
+class CategoricalCrossentropy(INetworkLossFunction):
 
     def __call__(self, y_true, y_pred):
         # turn vector to sparse integer representation
         return K.categorical_crossentropy(y_true, y_pred, from_logits=False)
 
 
-class SquaredAngularLoss(NetworkLossFunction):
+class SquaredAngularLoss(INetworkLossFunction):
     def __init__(self,
                  start_index_true=0,
                  stop_index_true=2,
