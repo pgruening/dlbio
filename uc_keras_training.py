@@ -21,7 +21,8 @@ class KerasTraining(ITraining):
                  reset_weights=True,
                  training_callbacks=[],
                  model_checkpoint_validation_period=1,
-                 tensorboard_batch_size=32
+                 tensorboard_batch_size=32,
+                 class_weight = None
                  ):
         """Method to train the keras keras_model.
 
@@ -48,7 +49,8 @@ class KerasTraining(ITraining):
         needed when training cross-validation
         (the default is True,
         which means the weights are initialized randomly when this function is called).
-
+        class_weights: list of float
+        when using sparse cross entropy you can reweight the specific class loss
         Returns
         -------
         keras history object
@@ -126,17 +128,23 @@ class KerasTraining(ITraining):
             metrics=costum_metrics
         )
 
+        kwargs = {}
+        if class_weight is not None:
+            kwargs.update({'class_weight':class_weight})
+
         # *train keras_model*
         if generator_val:
             history = keras_model.cnn.fit_generator(generator_train,
                                                     validation_data=generator_val,
                                                     epochs=number_of_epochs,
-                                                    callbacks=training_callbacks
+                                                    callbacks=training_callbacks,
+                                                    **kwargs
                                                     )
         else:
             history = keras_model.cnn.fit_generator(generator_train,
                                                     epochs=number_of_epochs,
                                                     callbacks=training_callbacks
+                                                    **kwargs
                                                     )
         # *save full run keras_model*
         model_name = os.path.join(save_path, "best_model_on_normal.h5")
