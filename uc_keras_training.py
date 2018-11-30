@@ -22,7 +22,7 @@ class KerasTraining(ITraining):
                  training_callbacks=[],
                  model_checkpoint_validation_period=1,
                  tensorboard_batch_size=32,
-                 class_weight = None
+                 class_weight=None
                  ):
         """Method to train the keras keras_model.
 
@@ -130,7 +130,7 @@ class KerasTraining(ITraining):
 
         kwargs = {}
         if class_weight is not None:
-            kwargs.update({'class_weight':class_weight})
+            kwargs.update({'class_weight': class_weight})
 
         # *train keras_model*
         if generator_val:
@@ -138,12 +138,13 @@ class KerasTraining(ITraining):
                                                     validation_data=generator_val,
                                                     epochs=number_of_epochs,
                                                     callbacks=training_callbacks,
+                                                    use_multiprocessing=True,
                                                     **kwargs
                                                     )
         else:
             history = keras_model.cnn.fit_generator(generator_train,
                                                     epochs=number_of_epochs,
-                                                    callbacks=training_callbacks
+                                                    callbacks=training_callbacks,
                                                     **kwargs
                                                     )
         # *save full run keras_model*

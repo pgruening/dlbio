@@ -887,10 +887,15 @@ class RandomCrop(IAugmentationFunction):
         x = np.random.randint(low=0, high=w-self.dim_x+1)
         y = np.random.randint(low=0, high=h-self.dim_y+1)
 
+        if image.ndim == 2:
+            image = image[..., np.newaxis]
+
         if label is not None:
             if label.ndim == 2:
                 label = label[:, :, np.newaxis]
-            return image[y:y+self.dim_y, x:x+self.dim_x, :], label[y:y+self.dim_y, x:x+self.dim_x, :]
+            image = image[y:y+self.dim_y, x:x+self.dim_x, :]
+            label = label[y:y+self.dim_y, x:x+self.dim_x, :]
+            return image, label
 
         else:
             return image[y:y+self.dim_y, x:x+self.dim_x, :]
