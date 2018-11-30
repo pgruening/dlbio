@@ -614,12 +614,13 @@ def setup_priors(shapes, heights, a_ratios):
             )
         )
         if ar != 1.0:
-            w = h/ar
+            # NOTE: switch height with width
+            # old version: w = h/ar
             box_specs.append(
                 BoxSpec(
                     index=-1,
-                    h=h,
-                    w=w
+                    h=w,
+                    w=h
                 )
             )
 
