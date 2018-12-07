@@ -8,7 +8,6 @@ import time
 import warnings
 
 import cv2
-import keras.backend as K
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
@@ -154,27 +153,6 @@ class pRectangle(IRectangle):
             facecolor='none')
 
 ################### miscellaneous functions #############################################################
-
-
-def check_if_is_init(tensor):
-    """When using costum functions that slice inputs,
-    there can be problems in the first run is the input
-    has a None somewhere
-
-    Parameters
-    ----------
-    tensor : tensor
-        input tensor like y_true or y_pred
-    Returns
-    -------
-    boolean
-        True if tensor shape contains a None value
-    """
-    shape = K.int_shape(tensor)
-    for s in shape:
-        if s is None:
-            return True
-    return False
 
 
 def save_image(file_path, array):
@@ -689,6 +667,7 @@ def setup_experiment_folders(path_to_experiment_folder):
 def safe_division(x, y): return 0.0 if float(y) == 0.0 else float(x)/float(y)
 
 
+#def file_path_to_ID(path): return os.path.splitext(os.path.basename(path))[0]
 def file_path_to_ID(path): return os.path.basename(path).split('.')[0]
 
 
