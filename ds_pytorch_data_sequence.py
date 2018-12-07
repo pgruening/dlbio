@@ -2,8 +2,8 @@ import copy
 import warnings
 
 import numpy as np
-import torch.utils.data.dataloader.DataLoader
-import torch.utils.data.Dataset
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 from .ds_Igenerator import IGenerator
 from .global_constants import DATA_ID_INDEX, DATA_IMAGE_INDEX, DATA_LABEL_INDEX
@@ -29,7 +29,7 @@ class DataSequence(IGenerator):
                                       return_ID,
                                       DEBUG)
 
-        self.data_loader = torch.utils.data.dataloader.DataLoader(
+        self.data_loader = DataLoader(
             self.dataset,
             batch_size=batch_size,
             shuffle=shuffle,
@@ -37,8 +37,17 @@ class DataSequence(IGenerator):
 
         )
 
+    # def __getitem__(self, index):
+    #    return self.data_loader.__getitem__(index)
 
-class PyTorchDataset(torch.utils.data.Dataset):
+    def __iter__(self):
+        return self.data_loader.__iter__()
+
+    def __len__(self):
+        return self.data_loader.__len__()
+
+
+class PyTorchDataset(Dataset):
     def __init__(self,
                  data,
                  augmentation_functions,
@@ -94,6 +103,8 @@ class PyTorchDataset(torch.utils.data.Dataset):
         self.index_list = self.index_list*num_id_repeats
 
     def __getitem__(self, index):
+        index = self.index_list[index]
+
         image = np.copy(self.data[index][DATA_IMAGE_INDEX])
         image_id = self.data[index][DATA_ID_INDEX]
         if self.has_labels:
