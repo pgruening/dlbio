@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 import numpy as np
-from keras.preprocessing import image as keras_image
 from PIL import Image
 
 SRC_COPY_FOLDER = ''
@@ -179,9 +178,8 @@ def load_image(image_path, pre_processing_fcn):
       Loaded image. If no pre-processing is done
       the image is of type uint8.
     """
-    image = keras_image.load_img(image_path)
+    image = Image.open(image_path)
     image = np.array(image)
-    #image = keras_image.img_to_array(image)
     if pre_processing_fcn is not None:
         image = pre_processing_fcn(image)
     return image
