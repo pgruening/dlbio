@@ -1,6 +1,3 @@
-from keras.utils.generic_utils import get_custom_objects
-
-
 class IMain(object):
     def __init__(self):
         pass
@@ -16,9 +13,3 @@ class IMain(object):
 
     def predict_single_sample(self, model, sample):
         raise NotImplementedError
-
-
-class KerasMain(IMain):
-    def init_costum_objects(self, costum_objects):
-        get_custom_objects().update(
-            costum_objects)
