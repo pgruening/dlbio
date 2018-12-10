@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from .misc.retinex import image_retinex
 from .ssd.ssd_label_computations import (get_normalized_rectangles,
                                          get_ssd_labels_fast)
-from .helpers import pRectangle
+from .helpers import pRectangle, cell_labeling
 import copy
 
 
@@ -965,3 +965,8 @@ class DetectionCropOnlyFullObject(IAugmentationFunction):
 
         else:
             return image[y:y+self.dim_y, x:x+self.dim_x, ...]
+
+
+class RelabelCCImageToSeries(IAugmentationFunction):
+    def __call__(self, cc_image):
+        return cell_labeling(cc_image)

@@ -249,6 +249,12 @@ class Aug_AddShadows(DecoratorImageOnly):
         super(Aug_AddShadows, self).__init__(func)
 
 
+class Aug_RelabelCCImageToSeries(DecoratorLabelOnly):
+    def __init__(self):
+        func = aug_fcns.RelabelCCImageToSeries()
+        super(Aug_RelabelCCImageToSeries, self).__init__(func)
+
+
 """
 class Aug_WNFlip(DecoratorBothValues):
     def __init__(self):
