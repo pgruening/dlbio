@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 
 from .ds_Igenerator import IGenerator
 from .global_constants import DATA_ID_INDEX, DATA_IMAGE_INDEX, DATA_LABEL_INDEX
+import torchvision.transforms as transforms
 
 
 class DataSequence(IGenerator):
@@ -19,7 +20,8 @@ class DataSequence(IGenerator):
                  return_ID=False,
                  shuffle=True,
                  DEBUG=False,
-                 num_workers=4
+                 num_workers=4,
+                 to_pytorch_tensor=True
                  ):
 
         self.dataset = PyTorchDataset(data,
@@ -27,7 +29,8 @@ class DataSequence(IGenerator):
                                       used_sample_id_list,
                                       num_id_repeats,
                                       return_ID,
-                                      DEBUG)
+                                      DEBUG,
+                                      to_pytorch_tensor)
 
         self.data_loader = DataLoader(
             self.dataset,
@@ -54,7 +57,8 @@ class PyTorchDataset(Dataset):
                  used_sample_id_list,
                  num_id_repeats,
                  return_ID,
-                 DEBUG
+                 DEBUG,
+                 to_pytorch_tensor
                  ):
 
         self.data = data
@@ -67,6 +71,9 @@ class PyTorchDataset(Dataset):
         self.id_list = copy.copy(used_sample_id_list)
 
         self.DEBUG = DEBUG
+
+        self.to_pytorch_tensor = to_pytorch_tensor
+        self.to_tensor = transforms.ToTensor()
 
     def _make_index_list(self, used_sample_id_list, num_id_repeats):
         """ Is used if the sequence should only work on a subset of the data.
@@ -134,6 +141,11 @@ class PyTorchDataset(Dataset):
 
         if label is not None and label.ndim == 2:
             label = label[:, :, np.newaxis]
+
+        # NOTE: pytorche uses (b,c,h,w) all functions are in tf's (b,h,w,c)
+        if self.to_pytorch_tensor:
+            image = self.to_tensor(image)
+            label = self.to_tensor(label)
 
         if self.return_ID:
             return image, label, image_id
