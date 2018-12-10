@@ -180,6 +180,10 @@ def load_image(image_path, pre_processing_fcn):
     """
     image = Image.open(image_path)
     image = np.array(image)
+
+    # image is loaded with transparency value, we remove it
+    if image.shape[-1] == 4:
+        image = image[..., :3]
     if pre_processing_fcn is not None:
         image = pre_processing_fcn(image)
     return image
