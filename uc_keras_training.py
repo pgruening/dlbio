@@ -70,13 +70,15 @@ class KerasTraining(ITraining):
         if generator_val is not None:
             generator_val.setup_augmentation_functions(keras_model)
 
-        lr_callback = keras.callbacks.LearningRateScheduler(lr_policy.schedule)
-        training_callbacks.append(lr_callback)
 
         if use_tensorboard:
-            parent_folder = "/".join(save_path.split("/")[0:-1])
+            #changed to save tensorboardfiles for different experiments in one folder to compare
+            parent_folder = "/".join(save_path.split("/")[0:-2]) # was [0:-1] before
+            #tb_save_path = os.path.join(
+            #    parent_folder, keras_model.ID, "tb_logs")
             tb_save_path = os.path.join(
-                parent_folder, keras_model.ID, "tb_logs")
+                    parent_folder,'logs',keras_model.ID
+            )
             print('writing to tensorboard to {}'.format(tb_save_path))
             tb_callback = keras.callbacks.TensorBoard(log_dir=tb_save_path,
                                                       histogram_freq=0,
@@ -98,7 +100,9 @@ class KerasTraining(ITraining):
 
         for (metric, mode) in early_stopping_metrics:
             model_name = os.path.join(
-                save_path, "best_model_on_{}.h5".format(metric))
+                # changed to save epoch in which the model was saved
+                #save_path, "best_model_on_{}_{epoch:02d}_{val_loss:.2f}.h5".format(metric))
+                save_path, "best_model_on_" + str(metric) + "_{epoch:02d}.h5")
             checkpoint = keras.callbacks.ModelCheckpoint(
                 model_name,
                 monitor=metric,

@@ -813,10 +813,19 @@ class RandomCrop(IAugmentationFunction):
 
         if h < self.dim_y or w < self.dim_x:
             if self.do_zero_pad_smaller_images:
-                new_im = np.zeros((self.dim_y, self.dim_x, image.shape[-1]))
-                new_im[:h, :w, :] = image
+                y = max(self.dim_y,h)
+                x = max(self.dim_x,w)
+                new_im = np.zeros((y,x, image.shape[-1]))
+                new_im[:h, :w] = image
                 image = new_im
+
+                new_label = np.zeros((y,x))
+                new_label[:h, :w] = label
+                label = new_label
+
                 h, w = image.shape[0], image.shape[1]
+
+               
 
             else:
                 raise ValueError(
