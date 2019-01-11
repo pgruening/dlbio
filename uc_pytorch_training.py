@@ -8,26 +8,12 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from .uc_Itraining import ITraining
-"""
-Training a Classifier
-=====================
-1. Load and normalizing the CIFAR10 training and test datasets using
-   ``torchvision``
-2. Define a Convolution Neural Network
-3. Define a loss function
-4. Train the network on the training data
-5. Test the network on the test data
 
-1. Loading and normalizing CIFAR10
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Using ``torchvision``, it’s extremely easy to load CIFAR10.
-"""
-#
 # This is when things start to get interesting.
 # We simply have to loop over our data iterator, and feed the inputs to the
 # network and optimize.
 
-NUM_BATCHES_UNTIL_PRINT = 10
+NUM_BATCHES_UNTIL_PRINT = 1
 
 
 class PyTorchTraining(ITraining):

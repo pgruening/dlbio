@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+import torch
 
 from .ds_Igenerator import IGenerator
 from .global_constants import DATA_ID_INDEX, DATA_IMAGE_INDEX, DATA_LABEL_INDEX
@@ -144,8 +145,9 @@ class PyTorchDataset(Dataset):
 
         # NOTE: pytorche uses (b,c,h,w) all functions are in tf's (b,h,w,c)
         if self.to_pytorch_tensor:
-            image = self.to_tensor(image)
-            label = self.to_tensor(label)
+
+            image = self.to_tensor(np.copy(image))
+            label = self.to_tensor(np.copy(label))
 
         if self.return_ID:
             return image, label, image_id
@@ -155,4 +157,6 @@ class PyTorchDataset(Dataset):
     def __len__(self):
         return len(self.index_list)
 
+    # def to_tensor(self, pic):
+    #    return torch.from_numpy(np.flip(pic.transpose((2, 0, 1)), axis=0).copy())
 # TODO add dataloader
