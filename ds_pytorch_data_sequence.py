@@ -50,6 +50,9 @@ class DataSequence(IGenerator):
     def __len__(self):
         return self.data_loader.__len__()
 
+    def is_match(self, index, used_sample_id_list):
+        return self.data[index][DATA_ID_INDEX] in used_sample_id_list
+
 
 class PyTorchDataset(Dataset):
     def __init__(self,
@@ -61,6 +64,8 @@ class PyTorchDataset(Dataset):
                  DEBUG,
                  to_pytorch_tensor
                  ):
+
+        self.data_id_index = DATA_ID_INDEX
 
         self.data = data
         self.augmentation_functions = augmentation_functions
@@ -94,13 +99,11 @@ class PyTorchDataset(Dataset):
             self.index_list = [i for i in range(self.data.shape[0])]
 
         else:
-            def is_match(
-                i): return self.data[i][DATA_ID_INDEX] in used_sample_id_list
 
             self.index_list = [i for i in range(
-                self.data.shape[0]) if is_match(i)]
+                self.data.shape[0]) if self.is_match(i, used_sample_id_list)]
 
-            if len(self.index_list) != len(used_sample_id_list):
+            if len(self.index_list) < len(used_sample_id_list):
                 warnings.warn("Not all images found. \
                 Found: {}, requested: {}".format(len(self.index_list),
                                                  len(used_sample_id_list))
@@ -156,6 +159,9 @@ class PyTorchDataset(Dataset):
 
     def __len__(self):
         return len(self.index_list)
+
+    def is_match(self, index, used_sample_id_list):
+        return self.data[index][DATA_ID_INDEX] in used_sample_id_list
 
     # def to_tensor(self, pic):
     #    return torch.from_numpy(np.flip(pic.transpose((2, 0, 1)), axis=0).copy())
