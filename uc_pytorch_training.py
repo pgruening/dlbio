@@ -8,12 +8,12 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from .uc_Itraining import ITraining
-
+import time
 # This is when things start to get interesting.
 # We simply have to loop over our data iterator, and feed the inputs to the
 # network and optimize.
 
-NUM_BATCHES_UNTIL_PRINT = 1
+NUM_BATCHES_UNTIL_PRINT = 10
 
 
 class PyTorchTraining(ITraining):
@@ -42,6 +42,7 @@ class PyTorchTraining(ITraining):
         for epoch in range(number_of_epochs):  # loop over the dataset multiple times
 
             running_loss = 0.0
+            start_time = time.time()
             for i, data in enumerate(generator_train):
                 # get the inputs
                 inputs, labels = data
@@ -51,7 +52,7 @@ class PyTorchTraining(ITraining):
 
                 # forward + backward + optimize
                 outputs = pytorch_model(inputs.cuda())
-                loss = loss_function(outputs, labels)
+                loss = loss_function(outputs, labels.cuda())
                 loss.backward()
                 optimizer.step()
 
@@ -62,14 +63,20 @@ class PyTorchTraining(ITraining):
                           (epoch + 1, i + 1, running_loss / n))
                     running_loss = 0.0
 
+            time_needed = time.time()-start_time
+            print('Time needed: {}'.format(time_needed))
+            lr_policy.step()
+
             if generator_val is not None:
+                print('---')
+                print('Validation')
                 # checking metrics on the validation set
                 tmp_metric_values = np.zeros(len(val_metrics))
-                for i, data in generator_val:
+                for i, data in enumerate(generator_val):
                     inputs, labels = data
 
                     # forward + backward + optimize
-                    outputs = pytorch_model(inputs)
+                    outputs = pytorch_model(inputs.cuda())
                     for j, metric_function in enumerate(val_metrics):
                         tmp = metric_function(outputs, labels)
                         tmp_metric_values[j] += tmp.item()
@@ -79,6 +86,7 @@ class PyTorchTraining(ITraining):
                     print('{}:{}'.format(
                         val_metrics[j].__name__, tmp_metric_values[j])
                     )
+                print('---')
 
             # saving the model
             if epoch % model_checkpoint_validation_period == 0:
