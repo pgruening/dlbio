@@ -25,6 +25,9 @@ class DataSequence(IGenerator):
                  to_pytorch_tensor=True
                  ):
 
+        if DEBUG:
+            num_workers = 0
+
         self.dataset = PyTorchDataset(data,
                                       augmentation_functions,
                                       used_sample_id_list,
@@ -120,7 +123,8 @@ class PyTorchDataset(Dataset):
         image_id = self.data[index][DATA_ID_INDEX]
         if self.has_labels:
             label = np.copy(self.data[index][DATA_LABEL_INDEX:])
-
+        else:
+            label = None
         # perform augmentation
         for func in self.augmentation_functions:
             if self.DEBUG:
@@ -152,10 +156,16 @@ class PyTorchDataset(Dataset):
             image = self.to_tensor(np.copy(image))
             label = self.to_tensor(np.copy(label))
 
-        if self.return_ID:
-            return image, label, image_id
+        if self.has_labels:
+            if self.return_ID:
+                return image, label, image_id
+            else:
+                return image, label
         else:
-            return image, label
+            if self.return_ID:
+                return image, image_id
+            else:
+                return image
 
     def __len__(self):
         return len(self.index_list)
