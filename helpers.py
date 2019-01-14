@@ -3,15 +3,15 @@ import csv
 import datetime
 import glob
 import os
+import random
 import shutil
 import time
 import warnings
 
 import cv2
 import matplotlib.pyplot as plt
-from matplotlib import patches
-
 import numpy as np
+from matplotlib import patches
 from PIL import Image
 
 SRC_COPY_FOLDER = ''
@@ -336,7 +336,7 @@ def plot_evaluation_image(input, filename):
     plt.close()
 
 
-def cell_labeling(connected_component_image):
+def cell_labeling(connected_component_image, do_shuffe=False):
     """Relabel cc_image so that the indeces
     are (1,2,3,...,number_of_cells)
 
@@ -355,6 +355,13 @@ def cell_labeling(connected_component_image):
         warnings.warn(
             'Input might not be a connected_components image.\
              Values are no integers.')
+
+    if do_shuffe:
+        unique_values = list(unique_values)
+        unique_values.remove(0)
+        random.shuffle(unique_values)
+        unique_values.append(0)
+        unique_values.reverse()
 
     # annoying warning when used with cropped data...
     # if np.shape(unique_values)[0] < 5:
