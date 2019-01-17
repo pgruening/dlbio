@@ -13,7 +13,7 @@ import time
 # We simply have to loop over our data iterator, and feed the inputs to the
 # network and optimize.
 
-NUM_BATCHES_UNTIL_PRINT = 10
+NUM_BATCHES_UNTIL_PRINT = 2
 
 
 class PyTorchTraining(ITraining):
