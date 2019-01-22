@@ -72,7 +72,9 @@ class PyTorchMultiFileDataset(PyTorchDataset):
                  return_ID,
                  batch_size,
                  DEBUG,
-                 to_pytorch_tensor
+                 to_pytorch_tensor,
+                 image_transform=transforms.ToTensor(),
+                 label_transform=transforms.ToTensor()
                  ):
 
         self.batch_size = batch_size
@@ -88,7 +90,8 @@ class PyTorchMultiFileDataset(PyTorchDataset):
         self.DEBUG = DEBUG
 
         self.to_pytorch_tensor = to_pytorch_tensor
-        self.to_tensor = transforms.ToTensor()
+        self.image_to_tensor = image_transform
+        self.label_to_tensor = label_transform
 
         self.file_paths = copy.copy(file_paths)
         self.index_dict = dict()

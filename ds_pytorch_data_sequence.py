@@ -22,7 +22,9 @@ class DataSequence(IGenerator):
                  shuffle=True,
                  DEBUG=False,
                  num_workers=4,
-                 to_pytorch_tensor=True
+                 to_pytorch_tensor=True,
+                 image_transform=transforms.ToTensor(),
+                 label_transform=transforms.ToTensor()
                  ):
 
         if DEBUG:
@@ -34,7 +36,10 @@ class DataSequence(IGenerator):
                                       num_id_repeats,
                                       return_ID,
                                       DEBUG,
-                                      to_pytorch_tensor)
+                                      to_pytorch_tensor,
+                                      image_transform,
+                                      label_transform
+                                      )
 
         self.data_loader = DataLoader(
             self.dataset,
@@ -65,7 +70,9 @@ class PyTorchDataset(Dataset):
                  num_id_repeats,
                  return_ID,
                  DEBUG,
-                 to_pytorch_tensor
+                 to_pytorch_tensor,
+                 image_transform,
+                 label_transform
                  ):
 
         self.data_id_index = DATA_ID_INDEX
@@ -82,7 +89,9 @@ class PyTorchDataset(Dataset):
         self.DEBUG = DEBUG
 
         self.to_pytorch_tensor = to_pytorch_tensor
-        self.to_tensor = transforms.ToTensor()
+
+        self.image_to_tensor = image_transform
+        self.label_to_tensor = label_transform
 
     def _make_index_list(self, used_sample_id_list, num_id_repeats):
         """ Is used if the sequence should only work on a subset of the data.
@@ -153,8 +162,8 @@ class PyTorchDataset(Dataset):
         # NOTE: pytorche uses (b,c,h,w) all functions are in tf's (b,h,w,c)
         if self.to_pytorch_tensor:
 
-            image = self.to_tensor(np.copy(image))
-            label = self.to_tensor(np.copy(label))
+            image = self.image_to_tensor(np.copy(image))
+            label = self.label_to_tensor(np.copy(label))
 
         if self.has_labels:
             if self.return_ID:
