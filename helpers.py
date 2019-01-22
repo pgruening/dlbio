@@ -368,12 +368,12 @@ def cell_labeling(connected_component_image, do_shuffe=False):
     #    warnings.warn(
     #        'Input might not be a connected_components image.\
     #         Less than five unique values in the image.')
-
+    output = np.zeros(connected_component_image.shape,
+                      dtype=connected_component_image.dtype)
     for new_index, current_index in enumerate(unique_values):
-        connected_component_image[connected_component_image ==
-                                  current_index] = new_index
+        output[connected_component_image == current_index] = new_index
 
-    return connected_component_image
+    return output
 
 
 ##################### mean average precision metric #################################################################
