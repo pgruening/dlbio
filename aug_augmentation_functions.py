@@ -126,6 +126,58 @@ class GetFirstItemOfLabelList(IAugmentationFunction):
             return label[0]
 
 
+class CropLabelToValidPaddingOutput(IAugmentationFunction):
+
+    def __init__(self, input_h_w, output_h_w):
+        """Label cropping that can be used if input shape and output
+        shape are given manually. There is a keras version in
+        aug_keras_aug_functions.py
+
+
+        Parameters
+        ----------
+        input_h_w : tuple:(int,int)
+            height and width of the input
+        output_h_w : tuple:(int,int)
+            height and width of the output
+
+        """
+        self.input_h_w = input_h_w
+        self.output_h_w = output_h_w
+
+    def __call__(self, label):
+        """Used when network returns a smaller output than input. Which is common,
+        when e.g. valid padding is used.
+
+        Parameters
+        ----------
+        label : np.array of input shape
+            bigger label that needs to be fitted to the smaller output
+        input_shape : np.array or list with [h, w, ...]
+            shape of the network's input
+        output_shape : np.array or list with [h_out, w_out, ...]
+            shape of the network's output
+        Returns
+        -------
+        np.array of size (h_out, w_out, dim)
+            returns cropped label.
+        """
+        offset_h = (self.input_h_w[0] - self.output_h_w[0])//2
+        offset_w = (self.input_h_w[1] - self.output_h_w[1])//2
+
+        if offset_h == 0 and offset_w != 0:
+            return label[offset_h:-offset_h, ...]
+
+        elif offset_w == 0 and offset_h != 0:
+            return label[:, offset_w:-offset_w, ...]
+
+        elif offset_w == 0 and offset_h == 0:
+            return label
+
+        else:
+            return label[offset_h:-offset_h, offset_w:-offset_w, ...]
+
+
 class GetDetectionLabel(IAugmentationFunction):
     def __init__(self):
         self.priors = None

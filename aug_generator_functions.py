@@ -90,8 +90,8 @@ class DecoratorBothValues(IAugFunctionDecorator):
 
 
 class Aug_LabelCropping(DecoratorLabelOnly):
-    def __init__(self):
-        func = aug_fcns.CropLabelToValidPaddingOutput()
+    def __init__(self, input_h_w, output_h_w):
+        func = aug_fcns.CropLabelToValidPaddingOutput(input_h_w, output_h_w)
         super(Aug_LabelCropping, self).__init__(func)
 
 
@@ -131,10 +131,10 @@ class Aug_GetFirstItemOfLabelList(DecoratorLabelOnly):
         super(Aug_GetFirstItemOfLabelList, self).__init__(func)
 
 
-class Aug_CCImageToClassLabel(DecoratorLabelOnly):
+class Aug_CCImageToBinaryLabel(DecoratorLabelOnly):
     def __init__(self):
         func = aug_fcns.ConnectedComponentImageToBinaryImage()
-        super(Aug_CCImageToClassLabel, self).__init__(func)
+        super(Aug_CCImageToBinaryLabel, self).__init__(func)
 
 
 class Aug_CCImageToEdgeCellLabel(DecoratorLabelOnly):
