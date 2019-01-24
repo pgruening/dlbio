@@ -49,8 +49,28 @@ class DataSequence(IGenerator):
 
         )
 
-    # def __getitem__(self, index):
-    #    return self.data_loader.__getitem__(index)
+        self.batch_size = batch_size
+
+    def __getitem__(self, index):
+        if self.batch_size > 1:
+            raise ValueError('get_item only supported for batch_size=1')
+        x = self.dataset.__getitem__(index)
+
+        # if the data are accessed via this way, image and label are not
+        # passed as a 4D-batch. To remedy this we use np.newaxis here. This
+        # way, we get a standardized output.
+        id_ = None
+        if len(x) == 3:
+            image, label, id_ = x[0], x[1], x[2]
+        else:
+            image, label = x[0], x[1]
+
+        image = image[np.newaxis, ...]
+        label = label[np.newaxis, ...]
+        if id_ is not None:
+            return image, label, id_
+        else:
+            return image, label
 
     def __iter__(self):
         return self.data_loader.__iter__()
