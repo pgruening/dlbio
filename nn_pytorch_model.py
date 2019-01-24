@@ -8,11 +8,15 @@ import warnings
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+
+from DLBio.pytorch_helpers import cuda_to_numpy
 
 from . import (aug_augmentation_functions, helpers, learning_rate_policy,
                process_image_patchwise)
 from .helpers import safe_division
-import torch
 
 
 class PytorchNeuralNetwork(object):
@@ -21,7 +25,8 @@ class PytorchNeuralNetwork(object):
                  model_id,
                  pre_process_function,
                  setup_function,
-                 post_process_fcn=None
+                 post_process_fcn=None,
+                 to_tensor_fcn=transforms.ToTensor()
                  ):
         """ Basic Neural Network (nn_) for instance segmentation.
         Consists of a pre-processing function (pref_*),
@@ -70,6 +75,8 @@ class PytorchNeuralNetwork(object):
         self.cnn = None
 
         self.post_process_fcn = post_process_fcn
+
+        self.to_tensor = to_tensor_fcn
 
     def do_task(self, input, do_pre_proc):
         raise NotImplementedError
@@ -137,7 +144,11 @@ class PytorchNeuralNetwork(object):
         np.array
             output of the keras model
         """
-        return self.cnn(input)
+        input = self.to_tensor(input[0, ...]).float().cuda()
+        output = self.cnn(input.unsqueeze(0))
+        output = F.softmax(output, dim=1)
+        output = cuda_to_numpy(output)
+        return output
 
     def show_activations(self, image,
                          save_path="./activations",
