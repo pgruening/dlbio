@@ -255,6 +255,12 @@ class Aug_RelabelCCImageToSeries(DecoratorLabelOnly):
         super(Aug_RelabelCCImageToSeries, self).__init__(func)
 
 
+class Aug_DilateLabel(DecoratorLabelOnly):
+    def __init__(self, k_size=3):
+        func = aug_fcns.DilateLabel(k_size)
+        super(Aug_DilateLabel, self).__init__(func)
+
+
 """
 class Aug_WNFlip(DecoratorBothValues):
     def __init__(self):

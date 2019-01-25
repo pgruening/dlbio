@@ -118,6 +118,15 @@ class ConcatFunctionOutputs(IAugmentationFunction):
 
 
 ############################# Label augmentations ##############################
+
+class DilateLabel(IAugmentationFunction):
+    def __init__(self, k_size=3):
+        self.kernel = np.ones((k_size, k_size))
+
+    def __call__(self, label):
+        return cv2.dilate(label, self.kernel)
+
+
 class GetFirstItemOfLabelList(IAugmentationFunction):
     def __call__(self, label):
         if label is None:
