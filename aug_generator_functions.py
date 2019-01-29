@@ -7,6 +7,7 @@ Look for function descriptions in the respective files.
 # BUG ? Numpy needs to be imported otherwise keras will not run training
 import numpy as np
 
+from . import aug_keras_aug_functions as aug_fcns_keras
 from . import aug_augmentation_functions as aug_fcns
 import warnings
 
@@ -90,8 +91,8 @@ class DecoratorBothValues(IAugFunctionDecorator):
 
 
 class Aug_LabelCropping(DecoratorLabelOnly):
-    def __init__(self):
-        func = aug_fcns.CropLabelToValidPaddingOutput()
+    def __init__(self,output_shape = None):
+        func = aug_fcns_keras.CropLabelToValidPaddingOutput(output_shape)
         super(Aug_LabelCropping, self).__init__(func)
 
 

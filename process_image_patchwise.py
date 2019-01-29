@@ -1,16 +1,25 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
+
 import cv2
+import keras.backend as K
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+
 
 DEBUG_PATCHWISE_SEGMENTATION = False
 SHOW_IDX = 1
 
 
-def whole_image_segmentation(model, image):
+def whole_image_segmentation(model, image, output_shape = None):
 
     input_shape = model.get_input_shape()
-    output_shape = model.get_output_shape_for_patchwise_processing()
+    
+    if output_shape == None:
+        output_shape = model.get_output_shape_for_patchwise_processing()
+    else:
+        output_shape = output_shape
+    
 
     original_image_size = {'x': image.shape[1], 'y': image.shape[0]}
     input_patch_size = {'x': input_shape[2], 'y': input_shape[1]}
@@ -59,6 +68,7 @@ def whole_image_segmentation(model, image):
     image_padded = get_padded_image(image,
                                     padding=padding_size,
                                     pad_method='symmetric')
+    num_classes = output_shape[3]
 
     output = patchwise_image_segmentation(cnn_function,
                                           image_padded,
@@ -67,7 +77,9 @@ def whole_image_segmentation(model, image):
                                           output_patch_size,
                                           output_full_size,
                                           padding_size,
-                                          model.get_num_classes())
+                                          num_classes
+                                          # was before: model.get_num_classes(). I changed it to make it work with my_unte_cluster
+                                          )
 
     # cutting back to original image size
     if padded_to_fit_input:
@@ -272,6 +284,12 @@ def patchwise_image_segmentation(network_output_fcn,
                 padded_image, {'x': in_x, 'y': in_y})
             network_output = network_output_fcn(network_input)
 
+            # if we use my_unet_cluster, the network_output mayneed to be reshaped
+            if network_output.shape[-1] == 262144:
+                num_segmentation_pixel = 256*256*3
+                network_output = np.reshape(network_output[:,:,:num_segmentation_pixel],(-1,256,256,3))
+            
+
             # update the net indeces accordingly
             top_left_world = output_2_world(top_left_output)
             down_right_world = output_2_world(down_right_output)
@@ -285,6 +303,13 @@ def patchwise_image_segmentation(network_output_fcn,
 
             in_y = [top_left_network[1], down_right_network[1]]
             in_x = [top_left_network[0], down_right_network[0]]
+            
+
+            #  I leave the if statement here, just in case something comes as a tensor instead of an array
+            if tf.contrib.framework.is_tensor(network_output) == True:
+                sess = tf.keras.backend.get_session()
+                network_output = network_output.eval(session=sess)
+                
 
             full_output[out_y[0]:out_y[1], out_x[0]:out_x[1], ...
                         ] = network_output[in_y[0]:in_y[1], in_x[0]:in_x[1],

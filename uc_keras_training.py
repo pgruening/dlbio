@@ -15,6 +15,7 @@ class KerasTraining(ITraining):
                  lr_policy,
                  number_of_epochs,
                  save_path,
+                 loss_weights=None,
                  generator_val=None,
                  costum_metrics=None,
                  use_tensorboard=True,
@@ -70,14 +71,17 @@ class KerasTraining(ITraining):
         if generator_val is not None:
             generator_val.setup_augmentation_functions(keras_model)
 
+        lr_callback = keras.callbacks.LearningRateScheduler(lr_policy.schedule)
+        training_callbacks.append(lr_callback)
 
         if use_tensorboard:
-            #changed to save tensorboardfiles for different experiments in one folder to compare
-            parent_folder = "/".join(save_path.split("/")[0:-2]) # was [0:-1] before
-            #tb_save_path = os.path.join(
+            # changed to save tensorboardfiles for different experiments in one folder to compare
+            # was [0:-1] before
+            parent_folder = "/".join(save_path.split("/")[0:-2])
+            # tb_save_path = os.path.join(
             #    parent_folder, keras_model.ID, "tb_logs")
             tb_save_path = os.path.join(
-                    parent_folder,'logs',keras_model.ID
+                parent_folder, 'logs', keras_model.ID
             )
             print('writing to tensorboard to {}'.format(tb_save_path))
             tb_callback = keras.callbacks.TensorBoard(log_dir=tb_save_path,
@@ -92,17 +96,23 @@ class KerasTraining(ITraining):
             training_callbacks.append(tb_callback)
 
         if costum_metrics is not None:
-            early_stopping_metrics = [
-                ('val_'+x.__name__, x.mode) for x in costum_metrics
-            ]
+            if isinstance(costum_metrics, (list,)):
+                early_stopping_metrics = [
+                    ('val_'+x.__name__, x.mode) for x in costum_metrics
+                ]
+            if isinstance(costum_metrics, (dict,)):
+                early_stopping_metrics = [('val_'+costum_metrics['output_to_classes'].__name__, costum_metrics['output_to_classes'].mode),
+                                          ('val_'+costum_metrics['cluster_output'].__name__, costum_metrics['cluster_output'].mode)]
+
         else:
             early_stopping_metrics = [('val_loss', 'min')]
 
         for (metric, mode) in early_stopping_metrics:
             model_name = os.path.join(
                 # changed to save epoch in which the model was saved
-                #save_path, "best_model_on_{}_{epoch:02d}_{val_loss:.2f}.h5".format(metric))
+                # save_path, "best_model_on_{}_{epoch:02d}_{val_loss:.2f}.h5".format(metric))
                 save_path, "best_model_on_" + str(metric) + "_{epoch:02d}.h5")
+
             checkpoint = keras.callbacks.ModelCheckpoint(
                 model_name,
                 monitor=metric,
@@ -116,6 +126,7 @@ class KerasTraining(ITraining):
 
         # for full train, save keras_model if every 5 epochs the loss did decrease
         model_name = os.path.join(save_path, "best_model_on_normal.h5")
+
         checkpoint = keras.callbacks.ModelCheckpoint(model_name,
                                                      monitor='loss',
                                                      verbose=0,
@@ -128,6 +139,7 @@ class KerasTraining(ITraining):
         #used_metrics = [x[0] for x in early_stopping_metrics]
         keras_model.cnn.compile(
             loss=loss_function,
+            loss_weights=loss_weights,
             optimizer=optimizer,
             metrics=costum_metrics
         )
@@ -135,6 +147,8 @@ class KerasTraining(ITraining):
         kwargs = {}
         if class_weight is not None:
             kwargs.update({'class_weight': class_weight})
+        # if loss_weights is not None:
+        #    kwargs.update({'loss_weights': loss_weights})
 
         # *train keras_model*
         if generator_val:

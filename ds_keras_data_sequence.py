@@ -28,6 +28,7 @@ class DataSequence(keras_sequence, IGenerator):
     def __init__(self, data,
                  augmentation_functions,
                  batch_size,
+                 deep_cluster = False,
                  ** kwargs
                  ):
         """DataSequence that can returns items of data in batches.
@@ -86,6 +87,8 @@ class DataSequence(keras_sequence, IGenerator):
 
         self.return_ID = return_ID
 
+        self.deep_cluster = deep_cluster
+    
         if self.shuffle is True:
             np.random.shuffle(self.index_list)
 
@@ -136,8 +139,15 @@ class DataSequence(keras_sequence, IGenerator):
         else:
             y = None
 
+        if self.deep_cluster == True:
+            kmeans_labels =[]
+        else:
+            kmeans_labels = None
+
         # Generate data
         for _i, load_index in enumerate(tmp_indeces):
+            if kmeans_labels is not None:
+                cluster_label = np.copy(self.data[load_index][3])
             image = np.copy(self.data[load_index][DATA_IMAGE_INDEX])
             IDs.append(self.data[load_index][DATA_ID_INDEX])
             if self.DEBUG:
@@ -158,6 +168,9 @@ class DataSequence(keras_sequence, IGenerator):
                 if self.DEBUG:
                     print('func: {}'.format(func))
                 try:
+                    # following if statement to make it work when the label has the shape [label, clusterlabel]
+                    #if label.shape == (1,2):
+                    #    label = label[0][0]
                     image, label = func(image, label)
                 except ValueError as Error:
                     print(Error)
@@ -179,11 +192,24 @@ class DataSequence(keras_sequence, IGenerator):
             if label is not None:
                 if label.ndim == 2:
                     label = label[:, :, np.newaxis]
-                y.append(label)
+                    y.append(label)
+            
+            if self.deep_cluster == True:
+                kmeans_labels.append(cluster_label)
 
         X = self._to_stack(X)
         if y is not None:
-            y = self._to_stack(y)
+            if kmeans_labels is not None:
+                #y = self._to_stack({'output_to_classes':y,
+                #                    'cluster_output': kmeans_labels})
+                y = np.asarray(y)
+                kmeans_labels = np.asarray(kmeans_labels)
+                y = {'output_to_classes': y,
+                        'cluster_output': kmeans_labels}
+            else:
+                y = self._to_stack(y)
+            
+    
 
         if self.batch_size == 1:
             IDs = IDs[0]

@@ -1,6 +1,7 @@
 import warnings
 
 
+
 class AugmentationList(list):
     def __init__(self, augmentation_functions):
         self.aug_list = augmentation_functions
@@ -14,6 +15,7 @@ class AugmentationList(list):
                 )
             else:
                 func.setup(model)
+                
 
         self.is_setup = True
 

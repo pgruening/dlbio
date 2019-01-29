@@ -1,14 +1,22 @@
 import keras.backend as K
-from aug_augmentation_functions import IAugmentationFunction
+from DLBio.aug_augmentation_functions import IAugmentationFunction
 
 
 class CropLabelToValidPaddingOutput(IAugmentationFunction):
+    def __init__(self,output_shape = None):
+        if output_shape is not None:
+            self.output_shape=output_shape
+        else:
+            self.output_shape=None
 
     def setup(self, model):
-        h_out, w_out = K.int_shape(model.cnn.layers[-1].output)[1:3]
+        
         h_in, w_in = model.get_input_shape()[1:3]
         self.input_shape = (h_in, w_in)
-        self.output_shape = (h_out, w_out)
+        if self.output_shape is None:
+            h_out, w_out = K.int_shape(model.cnn.layers[-1].output)[1:3]
+            self.output_shape = (h_out, w_out)
+       
 
     def __call__(self, label):
         """Used when network returns a smaller output than input. Which is common,
@@ -27,6 +35,7 @@ class CropLabelToValidPaddingOutput(IAugmentationFunction):
         np.array of size (h_out, w_out, dim)
             returns cropped label.
         """
+        
         offset_h = (self.input_shape[0] - self.output_shape[0])//2
         offset_w = (self.input_shape[1] - self.output_shape[1])//2
 

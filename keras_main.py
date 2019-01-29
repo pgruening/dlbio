@@ -1,5 +1,5 @@
 from keras.utils.generic_utils import get_custom_objects
-from main import IMain
+from DLBio.main import IMain
 
 
 class KerasMain(IMain):

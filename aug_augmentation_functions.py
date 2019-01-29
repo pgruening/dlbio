@@ -123,7 +123,10 @@ class GetFirstItemOfLabelList(IAugmentationFunction):
         if label is None:
             return None
         else:
-            return label[0]
+            if len(label.shape) ==2:
+                return label
+            else:
+                return label[0]
 
 
 class GetDetectionLabel(IAugmentationFunction):

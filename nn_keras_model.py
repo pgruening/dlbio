@@ -88,7 +88,7 @@ class KerasNeuralNetwork(object):
         # default_num = self.cnn.layers[-1].output_shape[-1]
         raise NotImplementedError
 
-    def _predict(self, input, do_pre_proc, predict_patch=False):
+    def _predict(self, input, do_pre_proc, output_shape = None, predict_patch=False):
         """Compute the keras_model output for a batch or an image. 
         NOTE: this is the output without any post-processing,
         to get the full output you need to implement do_task
@@ -116,12 +116,25 @@ class KerasNeuralNetwork(object):
         # single images can vary in size, hence might be processed patchwise
         is_single_image = input.ndim == 3
         if is_single_image:
+            # before it was just the last line. I changed it to make it work with my_unet_cluster
             if predict_patch:
-                return self._cnn_predict(input[np.newaxis, :, :, :])[0, :, :, :]
+                network_output = self._cnn_predict(input[np.newaxis, :, :, :])
+                if network_output.shape[-1]==262144:
+                    num_segmentation_pixel = 256*256*3
+                    
+                    network_output = np.reshape(network_output[...,:num_segmentation_pixel],(256,256,3))
+                    #network_output = np.reshape(network_output[:,:,:num_segmentation_pixel],(-1,256,256,3))[0,:,:,:]
+                    
+                else:
+                    network_output=network_output[0,:,:,:]
+
+                return network_output
+                #return self._cnn_predict(input[np.newaxis, :, :, :])[0, :, :, :]
             else:
                 return process_image_patchwise.whole_image_segmentation(
                     self,
-                    input
+                    input,
+                    output_shape = output_shape
                 )
         else:
             return self._cnn_predict(input)
@@ -149,7 +162,9 @@ class KerasNeuralNetwork(object):
             get_activations = K.function([model.layers[0].input, K.learning_phase()],
                                          [layer.output]
                                          )
+                                        
             activations = get_activations([input, 0])
+            print(activations[0].shape)
             return activations[0]
 
         out_im = helpers.to_uint8_image(np.copy(image[0, ...]))
@@ -192,6 +207,21 @@ class KerasNeuralNetwork(object):
                 plt.colorbar()
                 plt.savefig(layer_save_path + "/{}.png".format(n))
                 plt.close()
+
+    def get_latent_activations(self,image):
+        def compute_activations(model, layer, input):
+            get_activations = K.function([model.layers[0].input, K.learning_phase()],
+                                         [layer.output]
+                                         )
+            activations = get_activations([input,0])                            
+            #activations = get_activations([input, 0])
+            return activations[0]
+        #should be:
+        # layer = self.cnn.get_layer('latent_space')
+        layer = self.cnn.get_layer('Batchnorm_10')
+        activation = compute_activations(self.cnn, layer, image)
+        return activation
+        # MUSS ALS NAECHSTES IMPLEMENTIERT WERDEN
 
     def reset_model(self):
         if not self.initial_weights:
