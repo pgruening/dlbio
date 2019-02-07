@@ -13,7 +13,7 @@ import time
 # We simply have to loop over our data iterator, and feed the inputs to the
 # network and optimize.
 
-NUM_BATCHES_UNTIL_PRINT = 2
+NUM_BATCHES_UNTIL_PRINT = 50
 
 
 class PyTorchTraining(ITraining):
@@ -60,8 +60,10 @@ class PyTorchTraining(ITraining):
                 running_loss += loss.item()
                 if i % n == n-1:    # print every n mini-batches
                     print('[%d, %5d] loss: %.3f' %
-                          (epoch + 1, i + 1, running_loss / n))
-                    running_loss = 0.0
+                          (epoch + 1, i + 1, running_loss / i))
+
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / i))
 
             time_needed = time.time()-start_time
             print('Time needed: {}'.format(time_needed))
