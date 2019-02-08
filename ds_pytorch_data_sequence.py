@@ -53,7 +53,8 @@ class DataSequence(IGenerator):
 
     def __getitem__(self, index):
         if self.batch_size > 1:
-            raise ValueError('get_item only supported for batch_size=1')
+            warnings.warn('get_item only supported for batch_size=1')
+            self.batch_size = 1
         x = self.dataset.__getitem__(index)
 
         # if the data are accessed via this way, image and label are not

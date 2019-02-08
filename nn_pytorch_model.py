@@ -164,10 +164,12 @@ class PytorchNeuralNetwork(object):
     def get_input_shape(self):
         raise NotImplementedError
 
-    def load(self, model_file):
+    def load(self, model_file, run_in_eval_mode=True):
         self.cnn = torch.load(
             model_file
         )
+        if run_in_eval_mode:
+            self.cnn.eval()
 
     def pre_process(self, input):
         return self.pre_process_function(input)
