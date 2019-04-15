@@ -42,9 +42,13 @@ class PyTorchTraining(ITraining):
 
         for epoch in range(number_of_epochs):  # loop over the dataset multiple times
 
-            metric_values = dict()
-            for metric in costum_metrics:
-                metric_values[metric.__name__] = .0
+            if costum_metrics is not None:
+                metric_values = dict()
+                for metric in costum_metrics:
+                    metric_values[metric.__name__] = .0
+            else:
+                metric_values = None
+
             running_loss = 0.0
 
             loss_values = dict()
@@ -71,15 +75,17 @@ class PyTorchTraining(ITraining):
                 loss.backward()
                 optimizer.step()
 
-                for metric in costum_metrics:
-                    val = metric(outputs, labels)
-                    metric_values[metric.__name__] += val
+                if costum_metrics is not None:
+                    for metric in costum_metrics:
+                        val = metric(outputs, labels)
+                        metric_values[metric.__name__] += val
 
-                    # print statistics
+                # print statistics
                 running_loss += loss.item()
                 if i % print_period_in_batches == print_period_in_batches-1:
-                    print_loss(epoch, i, running_loss,
-                               metric_values, loss_values)
+                    if i > 0:
+                        print_loss(epoch, i, running_loss,
+                                   metric_values, loss_values)
 
             time_needed = time.time()-start_time
             print('Time needed: {}'.format(time_needed))
@@ -125,6 +131,9 @@ def print_loss(epoch, i, running_loss, metric_values, loss_values):
     for key, val in loss_values.items():
         print('[%d, %5d] %s: %.6f' %
               (epoch + 1, i + 1, key, val / i))
+
+    if metric_values is None:
+        return
 
     for key, val in metric_values.items():
         print('[%d, %5d] %s: %.6f' %

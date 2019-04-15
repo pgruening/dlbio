@@ -18,6 +18,11 @@ SRC_COPY_FOLDER = ''
 TB_LOG_FOLDER = ''
 
 
+def check_mkdir(directory):
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+
 class IRectangle(object):
     x_pos = 0
     y_pos = 1
