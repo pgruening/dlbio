@@ -18,7 +18,11 @@ SRC_COPY_FOLDER = ''
 TB_LOG_FOLDER = ''
 
 
-def check_mkdir(directory):
+def check_mkdir(directory_or_file):
+    if os.path.splitext(directory_or_file)[-1] != '':
+        directory = '/'.join(directory_or_file.split('/')[:-1])
+    else:
+        directory = directory_or_file
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
