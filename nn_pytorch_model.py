@@ -78,6 +78,8 @@ class PytorchNeuralNetwork(object):
 
         self.to_tensor = to_tensor_fcn
 
+        self.num_classes = 2  # default for binary
+
     def do_task(self, input, do_pre_proc):
         raise NotImplementedError
 
