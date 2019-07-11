@@ -15,3 +15,8 @@ def check_norm(model):
         ctr_ += 1.0
 
     print('Mean gradient: {}'.format(P/ctr_))
+
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']

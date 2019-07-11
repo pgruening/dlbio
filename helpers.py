@@ -19,12 +19,22 @@ TB_LOG_FOLDER = ''
 
 
 def check_mkdir(directory_or_file):
+    directory = _get_directory(directory_or_file)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+
+def get_parent_folder(directory_or_file):
+    directory = _get_directory(directory_or_file)
+    return directory.split('/')[-1]
+
+
+def _get_directory(directory_or_file):
     if os.path.splitext(directory_or_file)[-1] != '':
         directory = '/'.join(directory_or_file.split('/')[:-1])
     else:
         directory = directory_or_file
-    if not os.path.isdir(directory):
-        os.makedirs(directory)
+    return directory
 
 
 class IRectangle(object):
