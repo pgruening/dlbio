@@ -64,3 +64,8 @@ class Printer(object):
         else:
             output_dict[key].append(value)
         return output_dict
+
+    def on_epoch_end(self):
+        self.print()
+        self.write_to_log()
+        self.restart()
