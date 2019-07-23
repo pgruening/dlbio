@@ -52,6 +52,9 @@ class Printer(object):
         output_dict = self._check_write(
             output_dict, 'loss', self.loss/self.counter)
 
+        output_dict = self._check_write(
+            output_dict, 'lr', self.learning_rate)
+
         for key, val in self.metrics.items():
             output_dict = self._check_write(output_dict, key, val/self.counter)
 
