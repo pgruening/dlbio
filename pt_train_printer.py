@@ -1,5 +1,6 @@
 
 import json
+import time
 
 
 class Printer(object):
@@ -17,11 +18,16 @@ class Printer(object):
         self.counter = 0.0
         self.learning_rate = -1.
         self.metrics = dict()
+        self.start_time = time.time()
+        self.time_needed = 0.
 
     def update(self, loss, epoch, metrics=None):
         self.loss += loss.item()
         self.counter += 1.0
         self.epoch = epoch
+
+        self.time_needed += time.time() - self.start_time
+        self.start_time = time.time()
 
         if metrics is not None:
             for key, val in metrics.items():
@@ -42,6 +48,7 @@ class Printer(object):
         for key, val in self.metrics.items():
             out_str += f' {key}: {val/self.counter:.3f}'
         out_str += f' lr: {self.learning_rate:.5f}'
+        out_str += f' sec: {self.time_needed:.2f}'
         return out_str
 
     def write_to_log(self):
@@ -50,13 +57,17 @@ class Printer(object):
 
         output_dict = self._check_write(output_dict, 'epoch', self.epoch)
         output_dict = self._check_write(
-            output_dict, 'loss', self.loss/self.counter)
+            output_dict, 'loss', self.loss / self.counter)
+
+        output_dict = self._check_write(
+            output_dict, 'sec', self.time_needed)
 
         output_dict = self._check_write(
             output_dict, 'lr', self.learning_rate)
 
         for key, val in self.metrics.items():
-            output_dict = self._check_write(output_dict, key, val/self.counter)
+            output_dict = self._check_write(
+                output_dict, key, val / self.counter)
 
         with open(self.log_file, 'w') as file:
             json.dump(output_dict, file)
@@ -72,3 +83,7 @@ class Printer(object):
         self.print()
         self.write_to_log()
         self.restart()
+
+
+if __name__ == "__main__":
+    Printer(0, './printer_test.json')
