@@ -43,8 +43,18 @@ def whole_image_segmentation(model, image, output_shape = None):
                              'y': output_patch_size['y'] - 2*pad_y}
 
         def cnn_function(x):
-            return model._predict(
-                x, False, predict_patch=True)[pad_y:-pad_y, pad_x:-pad_x, :]
+            prediction = model._predict(
+                x, False, predict_patch=True)
+            # changes made for deep cluster    
+            if len(prediction) == 3:
+                segmentation = np.squeeze(prediction[0])[pad_y:-pad_y, pad_x:-pad_x, :]
+                cluster_labels = prediction[1]
+                latent_space = prediction[2]
+                return segmentation, cluster_labels,latent_space
+
+            else:
+                return model._predict(
+                    x, False, predict_patch=True)[pad_y:-pad_y, pad_x:-pad_x, :]
 
     else:
         def cnn_function(x): return model._predict(
@@ -83,11 +93,33 @@ def whole_image_segmentation(model, image, output_shape = None):
 
     # cutting back to original image size
     if padded_to_fit_input:
-        if pad_down == 0:
-            pad_down = +1
-        if pad_right == 0:
-            pad_right = +1
-        output = output[0:-pad_down, 0:-pad_right]
+        #changed because of error.. might have to be changed back..
+        
+        
+        #if pad_down == 0:
+            #pad_down = +1
+            
+
+        #if pad_right == 0:
+            #pad_right = +1
+        
+        if len(output)==3: 
+            #so if you are using deep clusternetwork
+            # ich musste das ändern, denn wenn mand pad_down auf 1 setzt und somit output[0:-1] nimmt erhält man eine leere liste.
+            if pad_down == 0:
+                pad_down = -output[0].shape[0]
+            if pad_right == 0:
+                pad_right = -output[0].shape[1]
+            segmentation = output[0]
+            segmentation = segmentation[0:-pad_down, 0:-pad_right]
+            output = [segmentation,output[1],output[2]]
+        else:
+            if pad_down == 0:
+                pad_down = output.shape[0]
+            if pad_right == 0:
+                pad_right = output.shape[1]
+
+            output = output[0:-pad_down, 0:-pad_right]
     return output
 
 
@@ -282,13 +314,13 @@ def patchwise_image_segmentation(network_output_fcn,
 
             network_input = network_input_fcn(
                 padded_image, {'x': in_x, 'y': in_y})
-            network_output = network_output_fcn(network_input)
+            n_output = network_output_fcn(network_input)
 
-            # if we use my_unet_cluster, the network_output mayneed to be reshaped
-            if network_output.shape[-1] == 262144:
-                num_segmentation_pixel = 256*256*3
-                network_output = np.reshape(network_output[:,:,:num_segmentation_pixel],(-1,256,256,3))
-            
+            if len(n_output)==3:
+                network_output = n_output[0]
+            else:
+                network_output = n_output
+                
 
             # update the net indeces accordingly
             top_left_world = output_2_world(top_left_output)
@@ -355,7 +387,10 @@ def patchwise_image_segmentation(network_output_fcn,
         current_position_world[0] = 0
         current_position_world += step_y
 
-    return full_output
+    if len(n_output)==3:
+        return full_output,n_output[1],n_output[2]
+    else:
+        return full_output
 
 
 def get_padded_image(original_image,

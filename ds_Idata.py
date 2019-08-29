@@ -102,17 +102,19 @@ def get_path_and_ids(folders, match_strings):
     """
     output = []
     print(folders, match_strings)
-    for (folder, match_string) in zip(folders, match_strings):
-        glob_string = os.path.join(folder, match_string)
-        files = glob.glob(glob_string)
+    #for (folder, match_string) in zip(folders, match_strings):
+    for folder in folders:
+        for match_string in match_strings:
+            glob_string = os.path.join(folder, match_string)
+            files = glob.glob(glob_string)
 
-        if len(files) == 0:
-            warnings.warn(
-                'No Ids for generated search: {}'.format(glob_string)
-            )
+            if len(files) == 0:
+                warnings.warn(
+                    'No Ids for generated search: {}'.format(glob_string)
+                )
 
-        output.extend([(x, file_path_to_ID(x))
-                       for x in files])
+            output.extend([(x, file_path_to_ID(x))
+                        for x in files])
     if len(output) == 0:
         raise ValueError(
             'ERROR: Could not find any files in the given locations.' +

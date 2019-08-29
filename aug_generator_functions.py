@@ -255,7 +255,10 @@ class Aug_RelabelCCImageToSeries(DecoratorLabelOnly):
         func = aug_fcns.RelabelCCImageToSeries()
         super(Aug_RelabelCCImageToSeries, self).__init__(func)
 
-
+class Aug_Inverse1(DecoratorImageOnly):
+    def __init__(self):
+        func = aug_fcns.InverseImage1()
+        super(Aug_Inverse1, self).__init__(func)
 """
 class Aug_WNFlip(DecoratorBothValues):
     def __init__(self):

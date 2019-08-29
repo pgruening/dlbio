@@ -635,7 +635,11 @@ class RandomContrast(IAugmentationFunction):
             image.clip(min=0, max=255)
         return image.astype(old_type)
 
+class InverseImage1(IAugmentationFunction):
+    def activated_call(self, image):
+        return 255 - image
 
+        
 @rescaling_decorator
 class InverseImage(IAugmentationFunction):
     def activated_call(self, image):

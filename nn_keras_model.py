@@ -23,7 +23,7 @@ class KerasNeuralNetwork(object):
                  model_id,
                  pre_process_function,
                  setup_function,
-                 post_process_fcn=None
+                 post_process_fcn=None,
                  ):
         """ Basic Neural Network (nn_) for instance segmentation.
         Consists of a pre-processing function (pref_*),
@@ -118,18 +118,7 @@ class KerasNeuralNetwork(object):
         if is_single_image:
             # before it was just the last line. I changed it to make it work with my_unet_cluster
             if predict_patch:
-                network_output = self._cnn_predict(input[np.newaxis, :, :, :])
-                if network_output.shape[-1]==262144:
-                    num_segmentation_pixel = 256*256*3
-                    
-                    network_output = np.reshape(network_output[...,:num_segmentation_pixel],(256,256,3))
-                    #network_output = np.reshape(network_output[:,:,:num_segmentation_pixel],(-1,256,256,3))[0,:,:,:]
-                    
-                else:
-                    network_output=network_output[0,:,:,:]
-
-                return network_output
-                #return self._cnn_predict(input[np.newaxis, :, :, :])[0, :, :, :]
+                return self._cnn_predict(input[np.newaxis, :, :, :])[0, :, :, :]
             else:
                 return process_image_patchwise.whole_image_segmentation(
                     self,

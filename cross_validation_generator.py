@@ -17,8 +17,8 @@ class CrossValidationGenerator(object):
         self.percent_val = kwargs.get('percent_val', .2)
         self.percent_test = kwargs.get('percent_test', .1)
 
-    def setup_cross_validation(self):
-        ids = self.get_sample_ids()
+    def setup_cross_validation(self,with_test_images = False):
+        ids = self.get_sample_ids(with_test_images)
 
         num_test = int(float(len(ids))*self.percent_test)
         if num_test == 0:

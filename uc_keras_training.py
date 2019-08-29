@@ -71,7 +71,7 @@ class KerasTraining(ITraining):
         if generator_val is not None:
             generator_val.setup_augmentation_functions(keras_model)
 
-        lr_callback = keras.callbacks.LearningRateScheduler(lr_policy.schedule)
+        lr_callback = keras.callbacks.LearningRateScheduler(lr_policy.schedule, verbose = 1)
         training_callbacks.append(lr_callback)
 
         if use_tensorboard:
