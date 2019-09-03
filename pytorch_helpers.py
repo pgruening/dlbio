@@ -1,3 +1,17 @@
+import json
+from recordtype import recordtype
+
+
+def get_options_object_from_file(opt_file):
+    with open(opt_file, 'r') as opt_file:
+        options = json.load(opt_file)
+
+    OptionObject = recordtype('OptionObject', options.keys())
+    options = OptionObject(**options)
+
+    return options
+
+
 def cuda_to_numpy(x):
     x = x.cpu().detach()
     if x.dim() == 4:
@@ -14,7 +28,7 @@ def check_norm(model):
         P += p.grad.data.norm(2).item()
         ctr_ += 1.0
 
-    print('Mean gradient: {}'.format(P/ctr_))
+    print('Mean gradient: {}'.format(P / ctr_))
 
 
 def get_lr(optimizer):
