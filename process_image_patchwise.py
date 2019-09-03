@@ -30,8 +30,8 @@ def whole_image_segmentation(model, image):
         pad_x = 32
         pad_y = 32
 
-        output_patch_size = {'x': output_patch_size['x'] - 2*pad_x,
-                             'y': output_patch_size['y'] - 2*pad_y}
+        output_patch_size = {'x': output_patch_size['x'] - 2 * pad_x,
+                             'y': output_patch_size['y'] - 2 * pad_y}
 
         def cnn_function(x):
             return model._predict(
@@ -160,8 +160,8 @@ def patchwise_image_segmentation(network_output_fcn,
     if downsample_factor > 1:
         print("Warning: downsample factor is {}.".format(downsample_factor))
     # downsampling is considered during the frame transformations
-    output_patch_size['x'] = downsample_factor*output_patch_size['x']
-    output_patch_size['y'] = downsample_factor*output_patch_size['y']
+    output_patch_size['x'] = downsample_factor * output_patch_size['x']
+    output_patch_size['y'] = downsample_factor * output_patch_size['y']
 
     # patch_center_world describes the current position in the process
     current_position_world = np.zeros(2).astype('float32')
@@ -176,17 +176,17 @@ def patchwise_image_segmentation(network_output_fcn,
          padding_size['y']]).astype('float32')
 
     # s: defined as distance from middle of patches to top_left of the respective patch
-    distance_middle_top_left_output = .5*np.asarray(
+    distance_middle_top_left_output = .5 * np.asarray(
         [output_patch_size['x'],
          output_patch_size['y']]).astype('float32')
 
-    distance_middle_top_left_input = .5*np.asarray(
+    distance_middle_top_left_input = .5 * np.asarray(
         [input_patch_size['x'],
          input_patch_size['y']]).astype('float32')
 
-    offset = .5*np.array([input_patch_size['x'] - output_patch_size['x'],
-                          input_patch_size['y'] - output_patch_size['y']],
-                         dtype='float32')
+    offset = .5 * np.array([input_patch_size['x'] - output_patch_size['x'],
+                            input_patch_size['y'] - output_patch_size['y']],
+                           dtype='float32')
 
     # ------------define frame transformations-----------------------------------
     def world_2_input(v): return (
@@ -198,16 +198,16 @@ def patchwise_image_segmentation(network_output_fcn,
 
     def world_2_output(v): return (
         (v.astype('float32') +
-         distance_middle_top_left_output)/downsample_factor).astype('int32')
+         distance_middle_top_left_output) / downsample_factor).astype('int32')
 
     def output_2_world(v): return (
-        v.astype('float32')*downsample_factor -
+        v.astype('float32') * downsample_factor -
         distance_middle_top_left_output)
 
     def world_2_net(v): return (
         (v.astype('float32') -
          current_position_world +
-         distance_middle_top_left_output)/downsample_factor).astype('int32')
+         distance_middle_top_left_output) / downsample_factor).astype('int32')
 
     # define functions to move to the top left and down right pixel of the patches
     def top_left_input_world(): return current_position_world - \
@@ -374,21 +374,3 @@ def get_padded_image(original_image,
                                   )
 
     return padded_image
-
-
-if __name__ == "__main__":
-    import os
-    import matplotlib.pyplot as plt
-    import nn_vgg16_unet
-    import helper_functions
-    from global_constants import ALL_KAGGLE_TEST_IMAGES
-
-    ID = "170bc41b2095177cccd3d4c8977c619147580f1d93b4fe9701eddd77736d4ece"
-    path_to_model_file = "./experiments/vgg16/cv/0/best_model_on_normal.h5"
-
-    model = nn_vgg16_unet.nn_vgg16()
-    model.load(path_to_model_file)
-    image_path = os.path.join(ALL_KAGGLE_TEST_IMAGES, ID+".png")
-    image = helper_functions.load_image(image_path, model.pre_process_fcn)
-
-    whole_image_segmentation(model, image)
