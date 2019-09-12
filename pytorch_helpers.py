@@ -1,5 +1,14 @@
 import json
+
+import numpy as np
 from recordtype import recordtype
+
+
+def get_num_trainable_params(model):
+    model_p = [p for p in model.parameters() if p.requires_grad]
+    #model_p = list(model.parameters())
+    num_params = sum([np.prod(p.size()) for p in model_p])
+    return num_params
 
 
 def get_options_object_from_file(opt_file):
