@@ -6,7 +6,10 @@ NUM_TRIES = 1
 AVAILABLE_GPUS = [0, 1, 2, 3]
 
 
-def run(param_generator, make_object, available_gpus=AVAILABLE_GPUS):
+def run(param_generator, make_object,
+        available_gpus=AVAILABLE_GPUS, num_tries=NUM_TRIES,
+        shuffle_params=True
+        ):
     """Run a number of processes in parallel, while keeping all GPUs
     busy
 
@@ -24,11 +27,12 @@ def run(param_generator, make_object, available_gpus=AVAILABLE_GPUS):
     current_available_gpus = available_gpus
 
     for kwargs in param_generator:
-        for try_num in range(NUM_TRIES):
+        for try_num in range(num_tries):
             train_process = make_object(try_num, **kwargs)
             train_processes_.append(train_process)
 
-    random.shuffle(train_processes_)
+    if shuffle_params:
+        random.shuffle(train_processes_)
 
     active_processes_ = []
     while train_processes_:
@@ -54,8 +58,22 @@ def run(param_generator, make_object, available_gpus=AVAILABLE_GPUS):
                 current_available_gpus.append(new_gpu)
 
                 active_processes_.remove((p, train_process))
-                minutes_needed = (time.time() - train_process.start_time)/60.
+                minutes_needed = (time.time() - train_process.start_time) / 60.
 
                 print(f'process {train_process.__name__} is done.')
                 print(f'minutes needed: {minutes_needed}')
                 print(f'available gpus: {current_available_gpus}')
+
+
+class ITrainingProcess():
+    def __init__(self):
+        self.start_time = -1
+        self.device = -1
+
+        self.__name__ = 'Give me a name!'
+
+    def __call__(self):
+        raise NotImplementedError
+
+    def set_timer(self):
+        self.start_time = time.time()
