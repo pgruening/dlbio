@@ -35,8 +35,8 @@ def run(param_generator, make_object,
         random.shuffle(train_processes_)
 
     active_processes_ = []
-    while train_processes_:
-        if current_available_gpus:
+    while train_processes_ or active_processes_:
+        if current_available_gpus and train_processes_:
             next_gpu = current_available_gpus.pop()
 
             train_process = train_processes_.pop()
