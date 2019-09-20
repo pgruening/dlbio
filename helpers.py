@@ -59,15 +59,15 @@ class Rectangle(IRectangle):
         # estimate position of intersection rectangle
         left = max(self.x, rectangle.x)
         top = max(self.y, rectangle.y)
-        right = min(self.x+self.w, rectangle.x+rectangle.w)
-        bottom = min(self.y+self.h, rectangle.y+rectangle.h)
+        right = min(self.x + self.w, rectangle.x + rectangle.w)
+        bottom = min(self.y + self.h, rectangle.y + rectangle.h)
 
         a = max(right - left, 0)
         b = max(bottom - top, 0)
 
         # estimate areas
-        area_intersection = a*b
-        area_union = self.w*self.h + rectangle.w*rectangle.h - area_intersection
+        area_intersection = a * b
+        area_union = self.w * self.h + rectangle.w * rectangle.h - area_intersection
 
         jaccard_index = safe_division(area_intersection, area_union)
         return jaccard_index
@@ -81,8 +81,8 @@ class Rectangle(IRectangle):
         return output
 
     def to_c_rectangle(self):
-        cx = self.x + .5*self.w
-        cy = self.y + .5*self.h
+        cx = self.x + .5 * self.w
+        cy = self.y + .5 * self.h
         return cRectangle(
             cx=cx,
             cy=cy,
@@ -96,9 +96,9 @@ class Rectangle(IRectangle):
         h = self.h + jitter
         w = self.w + jitter
 
-        xy = [x*image_shape[1], y*image_shape[0]]
-        h_box = h*image_shape[1]
-        w_box = w*image_shape[0]
+        xy = [x * image_shape[1], y * image_shape[0]]
+        h_box = h * image_shape[1]
+        w_box = w * image_shape[0]
         return patches.Rectangle(
             xy, w_box, h_box,
             linewidth=9,
@@ -106,10 +106,10 @@ class Rectangle(IRectangle):
             facecolor='none')
 
     def to_p_rectangle(self, h, w):
-        x = int(np.round(self.x*w))
-        y = int(np.round(self.y*h))
-        h_new = int(np.round(self.h*h))
-        w_new = int(np.round(self.w*w))
+        x = int(np.round(self.x * w))
+        y = int(np.round(self.y * h))
+        h_new = int(np.round(self.h * h))
+        w_new = int(np.round(self.w * w))
 
         return pRectangle(x=x, y=y, h=h_new, w=w_new)
 
@@ -122,8 +122,8 @@ class cRectangle(IRectangle):
         self.w = kwargs['w']
 
     def to_rectangle(self, *args):
-        x = self.cx - .5*self.w
-        y = self.cy - .5*self.h
+        x = self.cx - .5 * self.w
+        y = self.cy - .5 * self.h
         return Rectangle(
             x=x,
             y=y,
@@ -224,9 +224,12 @@ def to_uint8_image(image):
     if image.dtype == 'uint8':
         return image
 
+    if image.dtype != 'float32':
+        image = image.astype('float32')
+
     image -= np.min(image)
     image /= np.max(image)
-    return (255*image).astype('uint8')
+    return (255 * image).astype('uint8')
 
 
 def sigmoid(x):
@@ -288,13 +291,13 @@ def make_output_image(connected_components_image):
     if no_cell_in_image:
         return output_image
 
-    step = 3*255//np.max(connected_components_image)
+    step = 3 * 255 // np.max(connected_components_image)
     indeces = np.unique(connected_components_image)
     np.random.shuffle(indeces)
     for n, i in enumerate(indeces):
         if i == 0:
             continue
-        value = n*step
+        value = n * step
 
         tmp_image = np.zeros((h, w), dtype='uint8')
         for j in range(3):
@@ -431,24 +434,24 @@ def compute_mean_average_precision(input_pred, input_gt):
     JI_Matrix_bounding_box = np.zeros((num_labels_pred, num_labels_gt))
 
     # 0 is considered background
-    for i in range(1, num_labels_pred+1):
+    for i in range(1, num_labels_pred + 1):
 
         rectangle_pred = Rectangle(
-            x=stats_pred[i-1, cv2.CC_STAT_LEFT],
-            y=stats_pred[i-1, cv2.CC_STAT_TOP],
-            w=stats_pred[i-1, cv2.CC_STAT_WIDTH],
-            h=stats_pred[i-1, cv2.CC_STAT_HEIGHT]
+            x=stats_pred[i - 1, cv2.CC_STAT_LEFT],
+            y=stats_pred[i - 1, cv2.CC_STAT_TOP],
+            w=stats_pred[i - 1, cv2.CC_STAT_WIDTH],
+            h=stats_pred[i - 1, cv2.CC_STAT_HEIGHT]
         )
 
-        for j in range(1, num_labels_gt+1):
+        for j in range(1, num_labels_gt + 1):
             rectangle_gt = Rectangle(
-                x=stats_gt[j-1, cv2.CC_STAT_LEFT],
-                y=stats_gt[j-1, cv2.CC_STAT_TOP],
-                w=stats_gt[j-1, cv2.CC_STAT_WIDTH],
-                h=stats_gt[j-1, cv2.CC_STAT_HEIGHT]
+                x=stats_gt[j - 1, cv2.CC_STAT_LEFT],
+                y=stats_gt[j - 1, cv2.CC_STAT_TOP],
+                w=stats_gt[j - 1, cv2.CC_STAT_WIDTH],
+                h=stats_gt[j - 1, cv2.CC_STAT_HEIGHT]
             )
 
-            JI_Matrix_bounding_box[i-1, j -
+            JI_Matrix_bounding_box[i - 1, j -
                                    1] = rectangle_gt.estimate_jaccard_index(
                                        rectangle_pred
             )
@@ -472,8 +475,8 @@ def compute_mean_average_precision(input_pred, input_gt):
 
         # compute real jaccard index for the two components
         # row -> prediction components, column ground_truth components
-        pred_component = np.copy(cc_image_pred) == (maximum_index[0]+1)
-        gt_component = np.copy(cc_image_gt) == (maximum_index[1]+1)
+        pred_component = np.copy(cc_image_pred) == (maximum_index[0] + 1)
+        gt_component = np.copy(cc_image_gt) == (maximum_index[1] + 1)
         iou_values_for_each_gt[maximum_index[1]] = simple_IOU(
             pred_component, gt_component)
 
@@ -530,20 +533,20 @@ def compute_connected_component_stats(input):
     # Python 2 code:
     #unique_indeces = map(lambda x: int(x), list(np.unique(input)))
     unique_indeces = [int(x) for x in list(np.unique(input))]
-    output = np.zeros((len(unique_indeces)-1, max_num_columns))
+    output = np.zeros((len(unique_indeces) - 1, max_num_columns))
     for j, index in enumerate(unique_indeces):
         # 0 is background
         if index == 0:
             continue
         cell_indeces = np.argwhere(input == index)
-        output[j-1, cv2.CC_STAT_LEFT] = np.min(cell_indeces[:, 1])
-        output[j-1, cv2.CC_STAT_TOP] = np.min(cell_indeces[:, 0])
+        output[j - 1, cv2.CC_STAT_LEFT] = np.min(cell_indeces[:, 1])
+        output[j - 1, cv2.CC_STAT_TOP] = np.min(cell_indeces[:, 0])
 
-        output[j-1, cv2.CC_STAT_WIDTH] = np.max(
-            cell_indeces[:, 1]) - output[j-1, cv2.CC_STAT_LEFT] + 1
+        output[j - 1, cv2.CC_STAT_WIDTH] = np.max(
+            cell_indeces[:, 1]) - output[j - 1, cv2.CC_STAT_LEFT] + 1
 
-        output[j-1, cv2.CC_STAT_HEIGHT] = np.max(
-            cell_indeces[:, 0]) - output[j-1, cv2.CC_STAT_TOP] + 1
+        output[j - 1, cv2.CC_STAT_HEIGHT] = np.max(
+            cell_indeces[:, 0]) - output[j - 1, cv2.CC_STAT_TOP] + 1
     return output
 
 
@@ -567,8 +570,8 @@ def slow_compute_connected_component_stats(input):
         np.max(np.asarray([cv2.CC_STAT_LEFT, cv2.CC_STAT_TOP,
                            cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT]))
     unique_indeces = map(lambda x: int(x), list(np.unique(input)))
-    index_to_cell_map = {str(x): i-1 for i, x in enumerate(unique_indeces)}
-    output = -1.0*np.ones((len(unique_indeces)-1, max_num_columns))
+    index_to_cell_map = {str(x): i - 1 for i, x in enumerate(unique_indeces)}
+    output = -1.0 * np.ones((len(unique_indeces) - 1, max_num_columns))
     for y in range(input.shape[0]):
         for x in range(input.shape[1]):
 
@@ -618,15 +621,15 @@ def estimate_jaccard_index(rectangle_1, rectangle_2):
     # estimate position of intersection rectangle
     left = max(x_1, x_2)
     top = max(y_1, y_2)
-    right = min(x_1+w_1, x_2+w_2)
-    bottom = min(y_1+h_1, y_2+h_2)
+    right = min(x_1 + w_1, x_2 + w_2)
+    bottom = min(y_1 + h_1, y_2 + h_2)
 
     a = max(right - left, 0)
     b = max(bottom - top, 0)
 
     # estimate areas
-    area_intersection = a*b
-    area_union = w_1*h_1 + w_2*h_2 - area_intersection
+    area_intersection = a * b
+    area_union = w_1 * h_1 + w_2 * h_2 - area_intersection
 
     jaccard_index = safe_division(area_intersection, area_union)
     return jaccard_index
@@ -692,7 +695,7 @@ def setup_experiment_folders(path_to_experiment_folder):
         os.makedirs(os.path.join(path_to_experiment_folder, folder))
 
 
-def safe_division(x, y): return 0.0 if float(y) == 0.0 else float(x)/float(y)
+def safe_division(x, y): return 0.0 if float(y) == 0.0 else float(x) / float(y)
 
 
 #def file_path_to_ID(path): return os.path.splitext(os.path.basename(path))[0]
