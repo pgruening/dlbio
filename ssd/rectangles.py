@@ -68,15 +68,15 @@ class TopLeftRectangle(IRectangle):
         # estimate position of intersection rectangle
         left = max(self.x, rectangle.x)
         top = max(self.y, rectangle.y)
-        right = min(self.x+self.w, rectangle.x+rectangle.w)
-        bottom = min(self.y+self.h, rectangle.y+rectangle.h)
+        right = min(self.x + self.w, rectangle.x + rectangle.w)
+        bottom = min(self.y + self.h, rectangle.y + rectangle.h)
 
         a = max(right - left, 0)
         b = max(bottom - top, 0)
 
         # estimate areas
-        area_intersection = a*b
-        area_union = self.w*self.h + rectangle.w*rectangle.h - area_intersection
+        area_intersection = a * b
+        area_union = self.w * self.h + rectangle.w * rectangle.h - area_intersection
 
         jaccard_index = safe_division(area_intersection, area_union)
         return jaccard_index
@@ -140,13 +140,13 @@ class TopLeftRectangle(IRectangle):
             if type(w_norm) != float:
                 raise ValueError('w_norm is not a float number')
 
-        cx = self.x + .5*self.w
-        cy = self.y + .5*self.h
+        cx = self.x + .5 * self.w
+        cy = self.y + .5 * self.h
         return CenterNormalizedRectangle(
             cx=cx,
             cy=cy,
-            w=self.w/h_norm,
-            h=self.h/w_norm,
+            w=self.w / h_norm,
+            h=self.h / w_norm,
         )
 
 
@@ -156,18 +156,21 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
         self.type_id = kwargs.pop('type_id', 'unknown')
         super(ViewableTopLeftRectangle, self).__init__(**kwargs)
 
-    def add_cv_rectangle(self, image):
+    def add_cv_rectangle(self, image, color=None):
         """Draw a rectangle on the image via openCV
 
         Parameters
         ----------
         image : np.array
         """
+        if color is None:
+            color = self.color
+
         cv2.rectangle(
             image,
             (self.x, self.y),
-            (self.x+self.w, self.y+self.h),
-            self.color
+            (self.x + self.w, self.y + self.h),
+            color
         )
 
     def get_pyplot_patch(self):
@@ -183,7 +186,7 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
         return plt_patches.Rectangle(
             xy, w_box, h_box,
             linewidth=1,
-            edgecolor=np.array(self.color).astype('float')/255.0,
+            edgecolor=np.array(self.color).astype('float') / 255.0,
             facecolor='none')
 
 
@@ -203,8 +206,8 @@ class CenterNormalizedRectangle(IRectangle):
 
     def get_normalized_top_left(self):
         # function is needed only for ssd-label computations
-        x = self.cx - .5*self.w
-        y = self.cy - .5*self.h
+        x = self.cx - .5 * self.w
+        y = self.cy - .5 * self.h
 
         return TopLeftRectangle(
             x=x,
@@ -228,14 +231,14 @@ class CenterNormalizedRectangle(IRectangle):
         TopLeftRectangle
         """
         # get top left normalized coordinate
-        x = self.cx - .5*self.w
-        y = self.cy - .5*self.h
+        x = self.cx - .5 * self.w
+        y = self.cy - .5 * self.h
 
         # compute float normalized values to pixel coordinates
-        x_new = int(np.round(x*w_norm))
-        y_new = int(np.round(y*h_norm))
-        h_new = int(np.round(self.h*h_norm))
-        w_new = int(np.round(self.w*w_norm))
+        x_new = int(np.round(x * w_norm))
+        y_new = int(np.round(y * h_norm))
+        h_new = int(np.round(self.h * h_norm))
+        w_new = int(np.round(self.w * w_norm))
 
         return TopLeftRectangle(
             x=x_new,

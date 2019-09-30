@@ -37,6 +37,20 @@ def _get_directory(directory_or_file):
     return directory
 
 
+def get_id(filepath_or_filename):
+    x = os.path.basename(filepath_or_filename)
+    return os.path.splitext(x)[0]
+
+
+def open_npy():
+    files_ = glob.glob('*.npy')
+    file = random.choice(files_)
+    file = np.load(file)
+    print(file.shape)
+    plt.imshow(file)
+    plt.show()
+
+
 class IRectangle(object):
     x_pos = 0
     y_pos = 1
