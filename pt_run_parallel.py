@@ -65,6 +65,15 @@ def run(param_generator, make_object,
                 print(f'available gpus: {current_available_gpus}')
 
 
+class MakeObject():
+    def __init__(self, TrainingProcess):
+        self.TrainingProcess = TrainingProcess
+
+    def __call__(self, try_num, **kwargs):
+        # try num is not really used anymore...
+        return self.TrainingProcess(**kwargs)
+
+
 class ITrainingProcess():
     def __init__(self):
         self.start_time = -1
@@ -73,6 +82,7 @@ class ITrainingProcess():
         self.__name__ = 'Give me a name!'
 
     def __call__(self):
+        # NOTE: DON'T FORGET TO SET THE DEVICE!
         raise NotImplementedError
 
     def set_timer(self):
