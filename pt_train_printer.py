@@ -4,12 +4,14 @@ import time
 
 
 class Printer(object):
-    def __init__(self, print_intervall, log_file):
+    def __init__(self, print_intervall, log_file=None):
         self.print_intervall = print_intervall
         self.log_file = log_file
-        with open(self.log_file, 'w') as file:
-            output_dict = dict()
-            json.dump(output_dict, file)
+
+        if self.log_file is not None:
+            with open(self.log_file, 'w') as file:
+                output_dict = dict()
+                json.dump(output_dict, file)
         self.restart()
 
     def restart(self):
@@ -81,7 +83,8 @@ class Printer(object):
 
     def on_epoch_end(self):
         self.print()
-        self.write_to_log()
+        if self.log_file is not None:
+            self.write_to_log()
         self.restart()
 
 
