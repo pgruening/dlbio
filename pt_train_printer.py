@@ -54,6 +54,7 @@ class Printer(object):
         return out_str
 
     def write_to_log(self):
+        # NOTE: pt_tensor values cannot be written to a json file
         with open(self.log_file, 'r') as file:
             output_dict = json.load(file)
 

@@ -10,6 +10,7 @@ CURRENT_FILE = ''
 
 def run():
     master = tk.Tk()
+    master.title('Logfile viewer')
 
     w = tk.Label(master, text="Choose logfile")
     lab_current_file = tk.Label(master, text='')
