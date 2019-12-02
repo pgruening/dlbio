@@ -1,4 +1,5 @@
 import random
+import subprocess
 import time
 from multiprocessing import Process
 
@@ -66,6 +67,14 @@ def run(param_generator, make_object,
 
 
 class MakeObject():
+    """us me e.g. like this:
+    def run():
+        make_object = pt_run_parallel.MakeObject(TrainingProcess)
+        pt_run_parallel.run(param_generator(), make_object,
+                            available_gpus=AVAILABLE_GPUS
+                            )
+    """
+
     def __init__(self, TrainingProcess):
         self.TrainingProcess = TrainingProcess
 
@@ -76,14 +85,26 @@ class MakeObject():
 
 class ITrainingProcess():
     def __init__(self):
+        # NOTE: run init with kwargs, save kwargs as attribute
+        # run subprocess.call with self.kwargs in __call__
         self.start_time = -1
         self.device = -1
 
         self.__name__ = 'Give me a name!'
+        self.module_name = 'some_name.py'
+        self.kwargs = dict()
 
     def __call__(self):
-        # NOTE: DON'T FORGET TO SET THE DEVICE!
-        raise NotImplementedError
+        call_str = ['python', self.module_name]
+        for key, value in self.kwargs.items():
+            call_str += [f'--{key}']
+            if value is not None:
+                call_str += [f'{value}']
+
+        call_str += ['--device', str(self.device)]
+
+        print(call_str)
+        subprocess.call(call_str)
 
     def set_timer(self):
         self.start_time = time.time()
