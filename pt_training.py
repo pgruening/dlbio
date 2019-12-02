@@ -23,7 +23,8 @@ class Training():
     def __init__(
             self, optimizer, data_loader, train_interface,
             save_steps=-1, output_path=None,
-            metric_fcns_=[], printer=None, scheduler=None, clip=None
+            metric_fcns_=[], printer=None, scheduler=None, clip=None,
+            retain_graph=False
     ):
         self.optimizer = optimizer
         self.data_loader = data_loader
@@ -47,6 +48,7 @@ class Training():
         self.save_path = output_path
 
         self.clip = clip
+        self.retain_graph = retain_graph
 
     def __call__(self, epochs_):
         self.printer.restart()
@@ -65,7 +67,7 @@ class Training():
 
     def _update_weights(self, epoch, loss, metrics):
         self.optimizer.zero_grad()
-        loss.backward()
+        loss.backward(retain_graph=self.retain_graph)
 
         if self.clip is not None:
             torch.nn.utils.clip_grad_norm_(
@@ -84,6 +86,7 @@ class Training():
     def _save(self, epoch, epochs_):
         if self.do_save:
             if epoch == epochs_ - 1 or epoch % self.save_steps == 1:
+                print(f'Saving {self.save_path}')
                 torch.save(self.train_interface.model, self.save_path)
 
 
