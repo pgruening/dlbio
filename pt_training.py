@@ -13,9 +13,12 @@ from pytorch_lamb import Lamb
 
 class ITrainInterface():
     def __init__(self, *args, **kwargs):
+        # NOTE: needs a model a loss function and metrics
         raise NotImplementedError('Needs model and loss fcn and metrics')
 
     def train_step(self, *args, **kwargs):
+        # NOTE use like this:
+        # loss, metrics = self.train_interface.train_step(sample)
         raise NotImplementedError('Implement to run training')
 
 
@@ -161,3 +164,21 @@ def set_random_seed(seed):
     #    json.dump(output, file)
 
     return _init_fn
+
+
+def loss_verification(train_interface, data_loader, printer):
+    # verify loss
+    print('Running loss verification')
+    with torch.no_grad():
+        mean_im = 0.0
+        std_im = 0.0
+        ctr = 0.0
+        for sample in data_loader:
+            mean_im += sample['x'].mean()
+            std_im += sample['x'].std()
+            ctr += 1.0
+            loss, metrics = train_interface.train_step(sample)
+            printer.update(loss, -1, metrics)
+
+        printer.print()
+        print(f'mean: {mean_im/ctr:.3f} std: {std_im/ctr:.3f}')
