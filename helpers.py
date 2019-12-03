@@ -38,8 +38,13 @@ def _get_directory(directory_or_file):
 
 
 def get_id(filepath_or_filename):
+    # NOTE: may not works with files like name.sth.png
     x = os.path.basename(filepath_or_filename)
     return os.path.splitext(x)[0]
+
+
+def is_match(file_path_x, file_path_y):
+    return get_id(file_path_x) == get_id(file_path_y)
 
 
 def open_npy():
@@ -49,6 +54,7 @@ def open_npy():
     print(file.shape)
     plt.imshow(file)
     plt.show()
+
 
 def read_flow(fn):
     """ Read .flo file in Middlebury format"""
@@ -104,8 +110,6 @@ def writeFlow(filename, uv, v=None):
     tmp[:, np.arange(width) * 2 + 1] = v
     tmp.astype(np.float32).tofile(f)
     f.close()
-
-
 
 
 class IRectangle(object):
