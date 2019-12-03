@@ -24,9 +24,10 @@ class PytorchNeuralNetwork(object):
     def __init__(self,
                  model_id,
                  pre_process_function,
-                 setup_function,
+                 setup_function=None,
                  post_process_fcn=None,
-                 to_tensor_fcn=transforms.ToTensor()
+                 to_tensor_fcn=transforms.ToTensor(),
+                 normalization=None
                  ):
         """ Basic Neural Network (nn_) for instance segmentation.
         Consists of a pre-processing function (pref_*),
@@ -79,6 +80,7 @@ class PytorchNeuralNetwork(object):
         self.to_tensor = to_tensor_fcn
 
         self.num_classes = 2  # default for binary
+        self.normalization = normalization
 
     def do_task(self, input, do_pre_proc):
         raise NotImplementedError
@@ -147,6 +149,9 @@ class PytorchNeuralNetwork(object):
             output of the keras model
         """
         input = self.to_tensor(input[0, ...]).float().cuda()
+        if self.normalization is not None:
+            input = self.normalization(input)
+
         output = self.cnn(input.unsqueeze(0))
         output = F.softmax(output, dim=1)
         output = cuda_to_numpy(output)
