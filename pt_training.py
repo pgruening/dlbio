@@ -116,6 +116,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
 
 
 def get_scheduler(lr_steps, epochs, optimizer, gamma=.1):
+    assert lr_steps < epochs, f'Epochs must be greater than lr_steps but e:{epochs} < l:{lr_steps}'
     step_size = epochs // lr_steps
     print(f'Sched step size: {step_size}')
 
