@@ -18,8 +18,13 @@ SRC_COPY_FOLDER = ''
 TB_LOG_FOLDER = ''
 
 
-def check_mkdir(directory_or_file):
-    directory = _get_directory(directory_or_file)
+def check_mkdir(directory_or_file, is_dir=False):
+    if is_dir:
+        # NOTE: useful if the directory has a point in the foldername
+        directory = directory_or_file
+    else:
+        directory = _get_directory(directory_or_file)
+
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
