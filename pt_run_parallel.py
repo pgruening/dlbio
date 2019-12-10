@@ -101,6 +101,7 @@ class ITrainingProcess():
             if value is not None:
                 call_str += [f'{value}']
 
+        # NOTE: make sure the called subprocess has this property
         call_str += ['--device', str(self.device)]
 
         print(call_str)
