@@ -11,6 +11,7 @@ import warnings
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib import patches
 from PIL import Image
 
@@ -27,6 +28,11 @@ def check_mkdir(directory_or_file, is_dir=False):
 
     if not os.path.isdir(directory):
         os.makedirs(directory)
+
+
+def get_dataframe_from_row(df, index):
+    row = dict(df.iloc[index])
+    return pd.DataFrame({k: [v] for k, v in row.items()})
 
 
 def get_parent_folder(directory_or_file):
