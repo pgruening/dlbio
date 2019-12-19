@@ -22,8 +22,10 @@ class Printer(object):
         self.metrics = dict()
         self.start_time = time.time()
         self.time_needed = 0.
+        self.loss_key = 'loss'
 
-    def update(self, loss, epoch, metrics=None):
+    def update(self, loss, epoch, metrics=None, loss_key='loss'):
+        self.loss_key = loss_key
         self.loss += loss.item()
         self.counter += 1.0
         self.epoch = epoch
@@ -46,7 +48,7 @@ class Printer(object):
         print(self.get_out_str())
 
     def get_out_str(self):
-        out_str = f'Ep: {self.epoch}, Loss: {self.loss/self.counter:.5f}'
+        out_str = f'Ep: {self.epoch}, {self.loss_key}: {self.loss/self.counter:.5f}'
         for key, val in self.metrics.items():
             out_str += f' {key}: {val/self.counter:.3f}'
         out_str += f' lr: {self.learning_rate:.5f}'
@@ -60,7 +62,7 @@ class Printer(object):
 
         output_dict = self._check_write(output_dict, 'epoch', self.epoch)
         output_dict = self._check_write(
-            output_dict, 'loss', self.loss / self.counter)
+            output_dict, self.loss_key, self.loss / self.counter)
 
         output_dict = self._check_write(
             output_dict, 'sec', self.time_needed)
@@ -87,6 +89,10 @@ class Printer(object):
         if self.log_file is not None:
             self.write_to_log()
         self.restart()
+
+    def get_metrics(self):
+        assert self.counter > 0
+        return {k: v / self.counter for (k, v) in self.metrics.items()}
 
 
 if __name__ == "__main__":
