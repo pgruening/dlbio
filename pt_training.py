@@ -27,7 +27,7 @@ class Training():
             self, optimizer, data_loader, train_interface,
             save_steps=-1, output_path=None,
             metric_fcns_=[], printer=None, scheduler=None, clip=None,
-            retain_graph=False
+            retain_graph=False, val_data_loader=None, early_stopping=None
     ):
         self.optimizer = optimizer
         self.data_loader = data_loader
@@ -37,6 +37,7 @@ class Training():
 
         self.metric_fcns_ = metric_fcns_
         self.scheduler = scheduler
+        self.early_stopping = early_stopping
 
         if printer is None:
             self.printer = Printer(100, None)
@@ -53,22 +54,58 @@ class Training():
         self.clip = clip
         self.retain_graph = retain_graph
 
+        self.phases = ['train']
+        if val_data_loader is not None:
+            self.phases.append('validation')
+
+        self.data_loaders_ = {'train': data_loader,
+                              'validation': val_data_loader}
+
     def __call__(self, epochs_):
         self.printer.restart()
+
+        do_stop = False
 
         for epoch in range(epochs_):
             self.printer.learning_rate = get_lr(self.optimizer)
 
-            for sample in self.data_loader:
+            for current_phase in self.phases:
+                if current_phase == 'train':
+                    self.train_interface.model.train()
+                else:
+                    self.train_interface.model.eval()
+
+                for sample in self.data_loaders_[current_phase]:
+
+                    loss, metrics = self._train_step(sample, current_phase)
+                    self._update_printer(epoch, loss, metrics, current_phase)
+
+                    if current_phase == 'train':
+                        self._update_weights(loss)
+
+                if self.early_stopping is not None and current_phase == 'validation':
+                    do_stop = self.early_stopping(
+                        self.printer.get_metrics(),
+                        self.train_interface.model,
+                        self.save_path
+                    )
+                self.printer.on_epoch_end()
+
+                self._schedule(current_phase)
+                self._save(epoch, epochs_)
+
+            if do_stop:
+                return
+
+    def _train_step(self, sample, current_phase):
+        if current_phase == 'validation':
+            with torch.no_grad():
                 loss, metrics = self.train_interface.train_step(sample)
-                self._update_weights(epoch, loss, metrics)
+        else:
+            loss, metrics = self.train_interface.train_step(sample)
+        return loss, metrics
 
-            self.printer.on_epoch_end()
-
-            self._schedule()
-            self._save(epoch, epochs_)
-
-    def _update_weights(self, epoch, loss, metrics):
+    def _update_weights(self, loss):
         self.optimizer.zero_grad()
         loss.backward(retain_graph=self.retain_graph)
 
@@ -79,12 +116,20 @@ class Training():
 
         self.optimizer.step()
 
-        self.printer.update(loss, epoch, metrics)
+    def _update_printer(self, epoch, loss, metrics, current_phase):
+        if current_phase == 'train':
+            self.printer.update(loss, epoch, metrics)
+        else:
+            if metrics is not None:
+                metrics = {'val_' + k: v for (k, v) in metrics.items()}
+            self.printer.update(loss, epoch, metrics, loss_key='val_loss')
+
         self.printer.print_conditional()
 
-    def _schedule(self):
+    def _schedule(self, current_phase):
         if self.scheduler is not None:
-            self.scheduler.step()
+            if current_phase == 'train':
+                self.scheduler.step()
 
     def _save(self, epoch, epochs_):
         if self.do_save:
@@ -97,11 +142,14 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     if opt_id == 'SGD':
         optimizer = optim.SGD(parameters,
                               lr=learning_rate,
-                              momentum=kwargs.get('momentum', .9))
+                              momentum=kwargs.get('momentum', .9),
+                              weight_decay=kwargs.get('weight_decay', 0.)
+                              )
     elif opt_id == 'Adam':
         optimizer = optim.Adam(
             parameters,
-            lr=learning_rate
+            lr=learning_rate,
+            weight_decay=kwargs.get('weight_decay', 0.)
         )
     elif opt_id == 'lamb':
         optimizer = Lamb(
@@ -183,3 +231,38 @@ def loss_verification(train_interface, data_loader, printer):
 
         printer.print()
         print(f'mean: {mean_im/ctr:.3f} std: {std_im/ctr:.3f}')
+
+
+class EarlyStopping():
+    def __init__(self, metric_key, get_max=True, epoch_thres=np.inf):
+        self.key = metric_key
+        self.get_max = get_max
+
+        self.no_update_counter = 0.
+        self.thres = epoch_thres
+
+        if get_max:
+            self.current_val = -np.inf
+        else:
+            self.current_val = +np.inf
+
+    def __call__(self, metrics, model, output_path):
+        value = metrics[self.key]
+
+        self.no_update_counter += 1
+        if self.get_max:
+            if value > self.current_val:
+                self._update(value, model, output_path)
+        else:
+            if value < self.current_val:
+                self._update(value, model, output_path)
+
+        if self.no_update_counter > self.thres:
+            return True
+        else:
+            return False
+
+    def _update(self, value, model, output_path):
+        self.no_update_counter = 0
+        self.current_val = value
+        torch.save(model, output_path)
