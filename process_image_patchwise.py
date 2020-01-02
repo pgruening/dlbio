@@ -71,11 +71,10 @@ def whole_image_segmentation(model, image):
 
     # cutting back to original image size
     if padded_to_fit_input:
-        if pad_down == 0:
-            pad_down = +1
-        if pad_right == 0:
-            pad_right = +1
-        output = output[0:-pad_down, 0:-pad_right]
+        if pad_down != 0:
+            output = output[0:-pad_down, :, :]
+        if pad_right != 0:
+            output = output[:, 0:-pad_right, :]
     return output
 
 
@@ -271,6 +270,8 @@ def patchwise_image_segmentation(network_output_fcn,
             network_input = network_input_fcn(
                 padded_image, {'x': in_x, 'y': in_y})
             network_output = network_output_fcn(network_input)
+
+            print(network_input.shape, network_output.shape)
 
             # update the net indeces accordingly
             top_left_world = output_2_world(top_left_output)
