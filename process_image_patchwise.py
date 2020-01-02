@@ -271,8 +271,6 @@ def patchwise_image_segmentation(network_output_fcn,
                 padded_image, {'x': in_x, 'y': in_y})
             network_output = network_output_fcn(network_input)
 
-            print(network_input.shape, network_output.shape)
-
             # update the net indeces accordingly
             top_left_world = output_2_world(top_left_output)
             down_right_world = output_2_world(down_right_output)

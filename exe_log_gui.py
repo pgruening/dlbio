@@ -29,7 +29,7 @@ def run():
     bt_start = tk.Button(master, text='start', width=25, command=ow)
 
     w.pack()
-    file_list.pack()
+    file_list.pack(fill=tk.BOTH, expand=True)
     lab_current_file.pack()
 
     c_semilogy.pack()

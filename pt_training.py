@@ -25,7 +25,7 @@ class ITrainInterface():
 class Training():
     def __init__(
             self, optimizer, data_loader, train_interface,
-            save_steps=-1, output_path=None,
+            save_steps=-1, save_path=None,
             metric_fcns_=[], printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None
     ):
@@ -45,11 +45,11 @@ class Training():
             self.printer = printer
 
         if save_steps > 0:
-            assert output_path is not None
+            assert save_path is not None
 
-        self.do_save = save_steps > 0 and output_path is not None
+        self.do_save = save_steps > 0 and save_path is not None
         self.save_steps = save_steps
-        self.save_path = output_path
+        self.save_path = save_path
 
         self.clip = clip
         self.retain_graph = retain_graph
@@ -246,23 +246,23 @@ class EarlyStopping():
         else:
             self.current_val = +np.inf
 
-    def __call__(self, metrics, model, output_path):
+    def __call__(self, metrics, model, save_path):
         value = metrics[self.key]
 
         self.no_update_counter += 1
         if self.get_max:
             if value > self.current_val:
-                self._update(value, model, output_path)
+                self._update(value, model, save_path)
         else:
             if value < self.current_val:
-                self._update(value, model, output_path)
+                self._update(value, model, save_path)
 
         if self.no_update_counter > self.thres:
             return True
         else:
             return False
 
-    def _update(self, value, model, output_path):
+    def _update(self, value, model, save_path):
         self.no_update_counter = 0
         self.current_val = value
-        torch.save(model, output_path)
+        torch.save(model, save_path)
