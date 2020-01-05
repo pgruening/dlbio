@@ -459,10 +459,20 @@ def cell_labeling(connected_component_image, do_shuffe=False):
     """
     # changes cell labels to (1...ncells)
     unique_values = np.unique(connected_component_image)
+    if 0 not in unique_values:
+        connected_component_image[0, 0] = 0
+        unique_values = np.unique(connected_component_image)
+
     if np.any(unique_values - np.floor(unique_values)) > 0:
         warnings.warn(
             'Input might not be a connected_components image.\
              Values are no integers.')
+
+    if len(unique_values) == 1:
+        warnings.warn('Empty image, no connected components')
+        output = np.zeros(connected_component_image.shape,
+                          dtype=connected_component_image.dtype)
+        return output
 
     if do_shuffe:
         unique_values = list(unique_values)
