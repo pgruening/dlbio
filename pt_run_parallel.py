@@ -99,7 +99,10 @@ class ITrainingProcess():
         for key, value in self.kwargs.items():
             call_str += [f'--{key}']
             if value is not None:
-                call_str += [f'{value}']
+                if isinstance(value, list):
+                    call_str += [f'{x}' for x in value]
+                else:
+                    call_str += [f'{value}']
 
         # NOTE: make sure the called subprocess has this property
         call_str += ['--device', str(self.device)]
