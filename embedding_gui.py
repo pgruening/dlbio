@@ -4,35 +4,41 @@ this use IEmbedding function.
 You can visualize the embedding, when clicking on one of the data points,
 the selected plot function is called.
 
+-> EmbeddingGui._open_window
+-> Generate ClickableEmbeddingGui
+-> Embed plot_fcn.X
+-> on_click -> plot_fcn(index)
+
 #run e.g. like this:
 
 data = load_data()
 
-embedding = [
-    fcn1(data),
+plot_fcns = [
+    plot_fcn1(data),
     ...
-    fcn7(data)
+    plot_fcn4(data)
 ]
 
-plot_fcns = [
-    plot_fcn1(),
+embedding = [
+    fcn1(),
     ...
-    plot_fcn4()
+    fcn7()
 ]
+
 
 gui = EmbeddingGUI(embedding, plot_fcns)
 tk.mainloop()
 
 """
 import os
-import Tkinter as tk
+import tkinter as tk
 
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE, Isomap, LocallyLinearEmbedding
 
-from tk_multi_col_listbox import MultiColumnListbox
+from .tk_multi_col_listbox import MultiColumnListbox
 
 CHECKBOXES = None
 CHECK_VARS = None
@@ -270,10 +276,13 @@ class IPlotFunction():
         self._set_name()
 
     def _set_name(self):
+        """Needs to be implemented to be visible in the main gui.
+        """
         self.__name__ = 'implement me'
         raise NotImplementedError()
 
     def __call__(self, index):
+        # NOTE: plt.show() not necessary
         pass
 
 ##############################################################################
