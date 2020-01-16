@@ -4,3 +4,5 @@ ssd/new_ssd_label_computations.py
 ssd/old_ssd_label_computations.py
 .vscode/.ropeproject/config.py
 .vscode/.ropeproject/objectdb
+._*.py
+._pt_requirements.txt
