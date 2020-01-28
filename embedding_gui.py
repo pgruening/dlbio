@@ -204,7 +204,7 @@ class ClickableEmbeddingGUI():
         self.plot_fcn = plot_fcn
 
         self.Z = self.emb.fit_transform(plot_fcn.X)
-        fig = self.emb.plot(self.Z)
+        fig = self.emb.plot(self.Z, plot_fcn.__name__)
 
         # set clickable
         _ = fig.canvas.mpl_connect('button_press_event', self.on_click)
@@ -251,7 +251,7 @@ class IEmbeddingFunction():
     def get_params(self):
         return list(self.kwargs.items())
 
-    def plot(self, Z):
+    def plot(self, Z, plot_fcn_name):
         fig, _ = plt.subplots()
         if self.label is not None:
             plt.scatter(
@@ -262,7 +262,10 @@ class IEmbeddingFunction():
         else:
             plt.scatter(Z[:, 0], Z[:, 1])
 
-        plt.title(' '.join([f'{k}:{v}' for k, v in self.kwargs.items()]))
+        plt.title(' '.join(
+            [
+                f'{k}:{v}' for k, v in self.kwargs.items()
+            ] + [plot_fcn_name]))
         return fig
 
 
@@ -299,7 +302,7 @@ class TSNEEmbedding(IEmbeddingFunction):
             'n_components': n_components,
             'label_id': 0,
             'random_state': 0,
-            'perplexity': 30,
+            'perplexity': 15,
         }
         self.no_emb_keys = ['label_id']
         self.label = label
