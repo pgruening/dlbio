@@ -21,6 +21,10 @@ class ITrainInterface():
         # loss, metrics = self.train_interface.train_step(sample)
         raise NotImplementedError('Implement to run training')
 
+    def val_step(self, *args, **kwargs):
+        # usually exactly the same as the train step
+        return self.train_step(*args, **kwargs)
+
 
 class Training():
     def __init__(
@@ -100,7 +104,7 @@ class Training():
     def _train_step(self, sample, current_phase):
         if current_phase == 'validation':
             with torch.no_grad():
-                loss, metrics = self.train_interface.train_step(sample)
+                loss, metrics = self.train_interface.val_step(sample)
         else:
             loss, metrics = self.train_interface.train_step(sample)
         return loss, metrics
@@ -164,6 +168,9 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
 
 
 def get_scheduler(lr_steps, epochs, optimizer, gamma=.1):
+    if lr_steps < 1:
+        return None
+
     assert lr_steps < epochs, f'Epochs must be greater than lr_steps but e:{epochs} < l:{lr_steps}'
     step_size = epochs // lr_steps
     print(f'Sched step size: {step_size}')
@@ -189,26 +196,26 @@ def set_random_seed(seed):
     torch.manual_seed(seed)
     random.seed(seed)
 
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
     cv2.setRNGSeed(seed)
-
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
     os.environ['PYTHONHASHSEED'] = str(seed)
 
     def _init_fn(worker_id):
         np.random.seed(seed + worker_id)
 
     # for debugging purposes some random numbers are generated
-    output = {
-        'seed': seed,
-        'torch': torch.randn(1).item(),
-        'cuda': torch.cuda.FloatTensor(1).normal_().item(),
-        'numpy': float(np.random.randn(1)),
-        'python': random.randint(0, 5000)
-    }
+    # output = {
+    #    'seed': seed,
+    #    'torch': torch.randn(1).item(),
+    #    'cuda': torch.cuda.FloatTensor(1).normal_().item(),
+    #    'numpy': float(np.random.randn(1)),
+    #    'python': random.randint(0, 5000)
+    # }
     # with open(os.path.join(options.folder_name, 'rand_num_test.json'), 'w') as file:
     #    json.dump(output, file)
 
@@ -266,3 +273,4 @@ class EarlyStopping():
         self.no_update_counter = 0
         self.current_val = value
         torch.save(model, save_path)
+        print(f'saving model: {save_path}')
