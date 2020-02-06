@@ -2,6 +2,7 @@ import collections
 import csv
 import datetime
 import glob
+import json
 import os
 import random
 import shutil
@@ -28,6 +29,29 @@ def check_mkdir(directory_or_file, is_dir=False):
 
     if not os.path.isdir(directory):
         os.makedirs(directory)
+
+
+def save_options(file_path, options):
+    with open(file_path, 'w') as file:
+        json.dump(options.__dict__, file)
+
+
+class myDataFrame():
+    def __init__(self):
+        self.x = dict()
+
+    def update(self, in_dict):
+        for k, v in in_dict.items():
+            if k not in list(self.x.keys()):
+                self.x[k] = [v]
+            else:
+                self.x[k].append(v)
+
+    def add_col(self, key, col):
+        self.x[key] = col
+
+    def get_df(self, cols=None):
+        return pd.DataFrame(self.x, columns=cols)
 
 
 def get_dataframe_from_row(df, index):
