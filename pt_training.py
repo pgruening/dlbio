@@ -13,7 +13,7 @@ from pytorch_lamb import Lamb
 
 class ITrainInterface():
     def __init__(self, *args, **kwargs):
-        # NOTE: needs a model a loss function and metrics
+        # NOTE: needs a model, a device, a loss function, and metrics
         raise NotImplementedError('Needs model and loss fcn and metrics')
 
     def train_step(self, *args, **kwargs):
@@ -274,3 +274,7 @@ class EarlyStopping():
         self.current_val = value
         torch.save(model, save_path)
         print(f'saving model: {save_path}')
+
+
+def get_printer(print_intervall, log_file=None):
+    return Printer(print_intervall, log_file=log_file)
