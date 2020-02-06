@@ -36,7 +36,7 @@ def save_options(file_path, options):
         json.dump(options.__dict__, file)
 
 
-class myDataFrame():
+class MyDataFrame():
     def __init__(self):
         self.x = dict()
 
