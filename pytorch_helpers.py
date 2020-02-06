@@ -1,7 +1,13 @@
 import json
 
 import numpy as np
+import torch
 from recordtype import recordtype
+
+
+def get_device():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    return device
 
 
 def get_num_trainable_params(model):
