@@ -114,7 +114,7 @@ def open_window(file_list, full_paths, var_semilogy):
             if is_semilogy:
                 ax.semilogy(file[key])
             else:
-                ax.plot(file[key], label=key)
+                ax.plot(file[key], label=key, marker='d')
 
     ax.set_title(item)
 
