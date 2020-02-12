@@ -42,6 +42,10 @@ class MyDataFrame():
 
     def update(self, in_dict):
         for k, v in in_dict.items():
+
+            if isinstance(v, list):
+                warnings.warn(f'Input for {key} is list, consider add_col.')
+
             if k not in list(self.x.keys()):
                 self.x[k] = [v]
             else:
@@ -70,6 +74,13 @@ def _get_directory(directory_or_file):
     else:
         directory = directory_or_file
     return directory
+
+
+def find_image(im_path, labels_):
+    found_ = [x for x in labels_ if is_match(im_path, x)]
+    assert found_
+    assert len(found_) == 1
+    return found_[0]
 
 
 def get_id(filepath_or_filename):
