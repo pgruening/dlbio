@@ -1,5 +1,6 @@
 import os
 import random
+import argparse
 
 import cv2
 import numpy as np
@@ -9,6 +10,59 @@ import torch.optim as optim
 from DLBio.pt_train_printer import Printer
 from DLBio.pytorch_helpers import get_lr
 from pytorch_lamb import Lamb
+
+
+def get_train_arg_parser(config):
+    """Typical argument parser to train a neural network
+
+    Parameters
+    ----------
+    config : module or object
+        default values for your project
+
+    Returns
+    -------
+    argument parser
+        use like this:
+        import config_module
+        ...
+        ...
+        def get_options():
+            parser = get_train_argparser(config_module)
+            parser.add_argument(...)
+            ...
+
+            return parser.parse_args()
+
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lr', type=float, default=config.LEARNING_RATE)
+    parser.add_argument('--mom', type=float, default=config.MOMENTUM)
+    parser.add_argument('--opt', type=str, default=config.OPTIMIZER)
+
+    parser.add_argument('--bs', type=int, default=config.BATCH_SIZE)
+    parser.add_argument('--epochs', type=int, default=config.EPOCHS)
+    parser.add_argument('--lr_steps', type=int, default=config.LR_STEPS)
+    parser.add_argument('--nw', type=int, default=config.NUM_WORKERS)
+    parser.add_argument('--sv_int', type=int, default=config.SAVE_INTERVALL)
+    parser.add_argument('--model_type', type=str, default=config.MODEL_TYPE)
+
+    parser.add_argument('--seed', type=int, default=config.SEED)
+    parser.add_argument('--device', type=int, default=config.DEVICE)
+
+    parser.add_argument('--folder', type=str, default=config.DEF_FOLDER)
+    parser.add_argument('--model_name', type=str, default=config.MODEL_NAME)
+
+    parser.add_argument('--in_dim', type=int, default=config.INPUT_DIM)
+
+    parser.add_argument('--early_stopping', action='store_true')
+    parser.add_argument('--es_metric', type=str, default=config.ES_METRIC)
+
+    # may be unnecessary for your project
+    parser.add_argument('--ds_len', type=int, default=config.DATASET_LENGTH)
+    parser.add_argument('--crop_size', type=int, default=config.CROP_SIZE)
+
+    return parser
 
 
 class ITrainInterface():
