@@ -44,7 +44,7 @@ class MyDataFrame():
         for k, v in in_dict.items():
 
             if isinstance(v, list):
-                warnings.warn(f'Input for {key} is list, consider add_col.')
+                warnings.warn(f'Input for {k} is list, consider add_col.')
 
             if k not in list(self.x.keys()):
                 self.x[k] = [v]
