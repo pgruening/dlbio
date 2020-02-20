@@ -58,6 +58,8 @@ def get_train_arg_parser(config):
     parser.add_argument('--early_stopping', action='store_true')
     parser.add_argument('--es_metric', type=str, default=config.ES_METRIC)
 
+    parser.add_argument('--num_classes', type=int, default=config.NUM_CLASSES)
+
     # may be unnecessary for your project
     parser.add_argument('--ds_len', type=int, default=config.DATASET_LENGTH)
     parser.add_argument('--crop_size', type=int, default=config.CROP_SIZE)
