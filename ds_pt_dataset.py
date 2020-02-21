@@ -34,6 +34,16 @@ class SegmentationDataset(Dataset):
 
             assert y.ndim == expected_ndims, f'expect shape (h, w), got {y.shape}'
 
+        # all input images should have the same dimension
+        x_dims = set()
+        for x in self.images:
+            if x.ndim == 2:
+                x_dims.add(1)
+            else:
+                x_dims.add(x.shape[-1])
+
+        assert len(x_dims) == 1
+
         self.__ran_data_check = True
 
     def __getitem__(self, index):
