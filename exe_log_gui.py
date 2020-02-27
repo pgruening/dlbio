@@ -2,6 +2,8 @@ import tkinter as tk
 import os
 import matplotlib.pyplot as plt
 import json
+import re
+from os.path import join
 
 CHECKBOXES = []
 CHECK_VARS = []
@@ -13,9 +15,7 @@ def run():
     master.title('Logfile viewer')
 
     w = tk.Label(master, text="Choose logfile")
-    lab_current_file = tk.Label(master, text='')
-
-    file_list, full_paths = prepare_list(master, lab_current_file)
+    lab_current_file = tk.Label(master, text='', name='current_file')
 
     def _end(): return end(master)
     bt_cancel = tk.Button(master, text='cancel',
@@ -25,9 +25,18 @@ def run():
     var_semilogy.set(0)
     c_semilogy = tk.Checkbutton(master, text='semilogy', variable=var_semilogy)
 
+    file_list = tk.Listbox(master, name='file_list')
+    file_list, full_paths = prepare_list(master, lab_current_file, file_list)
     def ow(): return open_window(file_list, full_paths, var_semilogy)
     bt_start = tk.Button(master, text='start', width=25, command=ow)
 
+    regex_lab = tk.Label(master, text='RegEx:')
+    regex_entry = tk.Entry(master)
+    regex_entry.bind("<Return>", eval_regex)
+
+    ##################
+    # start packing  #
+    ##################
     w.pack()
     file_list.pack(fill=tk.BOTH, expand=True)
     lab_current_file.pack()
@@ -37,6 +46,9 @@ def run():
     bt_start.pack()
     bt_cancel.pack()
 
+    regex_lab.pack()
+    regex_entry.pack()
+
     tk.mainloop()
 
 
@@ -45,9 +57,8 @@ def end(master):
     plt.close('all')
 
 
-def prepare_list(master, lab_current_file):
-    file_list = tk.Listbox(master)
-    full_paths = add_logfiles(file_list)
+def prepare_list(master, lab_current_file, file_list, regex=None):
+    full_paths = add_logfiles(file_list, regex=regex)
     def fcn(x): return read_items(x, full_paths, master, lab_current_file)
 
     for bind_input in ["<Button-1>", "<Up>", "<Down>"]:
@@ -56,16 +67,36 @@ def prepare_list(master, lab_current_file):
     return file_list, full_paths
 
 
-def add_logfiles(file_list):
+def eval_regex(event):
+    regex = event.widget.get()
+    regex = re.compile(regex)
+    master = event.widget.master
+    lab_current_file = master.children['current_file']
+    file_list = master.children['file_list']
+
+    file_list, full_paths = prepare_list(
+        master, lab_current_file, file_list, regex=regex)
+
+
+def add_logfiles(file_list, regex=None):
     full_paths = dict()
+
+    # first delete everything
+    file_list.delete(0, tk.END)  # clear
+
     for root, _, files_ in os.walk('.'):
-        files_ = [x for x in files_ if os.path.splitext(x)[-1] == '.json']
+        if regex is None:
+            files_ = [x for x in files_ if os.path.splitext(x)[-1] == '.json']
+        else:
+            files_ = [x
+                      for x in files_ if bool(re.match(regex, join(root, x)))]
+
         if not files_:
             continue
-        last_folder = '/'.join(root.split('/')[-2:])
-        #last_folder = root.split('/')[-1]
+        #last_folder = '/'.join(root.split('/')[-2:])
+        # last_folder = root.split('/')[-1]
         for file in files_:
-            item = '.../' + os.path.join(last_folder, file)
+            item = os.path.join(root, file)[-120:]
 
             ctr = 1
             while item in full_paths.keys():
