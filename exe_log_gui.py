@@ -62,9 +62,16 @@ def add_logfiles(file_list):
         files_ = [x for x in files_ if os.path.splitext(x)[-1] == '.json']
         if not files_:
             continue
-        last_folder = root.split('/')[-1]
+        last_folder = '/'.join(root.split('/')[-2:])
+        #last_folder = root.split('/')[-1]
         for file in files_:
             item = '.../' + os.path.join(last_folder, file)
+
+            ctr = 1
+            while item in full_paths.keys():
+                item += f'_{ctr}'
+                ctr += 1
+
             file_list.insert(tk.END, item)
             full_paths[item] = os.path.join(root, file)
 
@@ -135,4 +142,6 @@ def load_current(file_list, full_paths):
 
 
 if __name__ == "__main__":
+    #import os
+    # os.chdir('/nfshome/gruening/my_code/DLBio_repos/log_layers/experiments/cifar10')
     run()
