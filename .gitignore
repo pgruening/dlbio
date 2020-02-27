@@ -6,3 +6,4 @@ ssd/old_ssd_label_computations.py
 .vscode/.ropeproject/objectdb
 ._*.py
 ._pt_requirements.txt
+.vscode/launch.json
