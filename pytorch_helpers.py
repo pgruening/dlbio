@@ -10,8 +10,11 @@ def get_device():
     return device
 
 
-def get_num_trainable_params(model):
-    model_p = [p for p in model.parameters() if p.requires_grad]
+def get_num_params(model, count_only_trainable=True):
+    def select(p):
+        return p.requires_grad or not count_only_trainable
+
+    model_p = [p for p in model.parameters() if select(p)]
     #model_p = list(model.parameters())
     num_params = sum([np.prod(p.size()) for p in model_p])
     return num_params
