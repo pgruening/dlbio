@@ -84,7 +84,7 @@ class MakeObject():
 
 
 class ITrainingProcess():
-    def __init__(self):
+    def __init__(self, **kwargs):
         # NOTE: run init with kwargs, save kwargs as attribute
         # run subprocess.call with self.kwargs in __call__
         self.start_time = -1
