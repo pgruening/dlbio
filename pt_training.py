@@ -37,6 +37,7 @@ def get_train_arg_parser(config):
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=config.LEARNING_RATE)
+    parser.add_argument('--wd', type=float, default=config.WEIGHT_DECAY)
     parser.add_argument('--mom', type=float, default=config.MOMENTUM)
     parser.add_argument('--opt', type=str, default=config.OPTIMIZER)
 
@@ -203,7 +204,8 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
         optimizer = optim.SGD(parameters,
                               lr=learning_rate,
                               momentum=kwargs.get('momentum', .9),
-                              weight_decay=kwargs.get('weight_decay', 0.)
+                              weight_decay=kwargs.get('weight_decay', 0.),
+                              nesterov=kwargs.get('nesterov', False)
                               )
     elif opt_id == 'Adam':
         optimizer = optim.Adam(
