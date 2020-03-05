@@ -1,15 +1,16 @@
+import argparse
 import os
 import random
-import argparse
+import warnings
 
 import cv2
 import numpy as np
-
 import torch
 import torch.optim as optim
+from pytorch_lamb import Lamb
+
 from DLBio.pt_train_printer import Printer
 from DLBio.pytorch_helpers import get_lr
-from pytorch_lamb import Lamb
 
 
 def get_train_arg_parser(config):
@@ -121,6 +122,9 @@ class Training():
 
         self.data_loaders_ = {'train': data_loader,
                               'validation': val_data_loader}
+
+        if not torch.cuda.is_available():
+            warnings.warn('No GPU detected. Training can be slow.')
 
     def __call__(self, epochs_):
         self.printer.restart()
