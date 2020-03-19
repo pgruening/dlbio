@@ -55,7 +55,34 @@ class MyDataFrame():
         self.x[key] = col
 
     def get_df(self, cols=None):
+        assert self._check_same_lenghts()
         return pd.DataFrame(self.x, columns=cols)
+
+    def _check_same_lenghts(self):
+        len_vals = {k: len(v) for k, v in self.x.items()}
+        if len(set(len_vals.values())) > 1:
+            print(len_vals)
+            return False
+
+        return True
+
+
+class ToBin():
+    def __init__(self, n):
+        self.n = n
+
+    def __call__(self, arr):
+        assert arr.ndim == 1
+        out = [ToBin._to_bin(int(x)) for x in list(arr)]
+        return np.stack(out, 0)
+
+    @staticmethod
+    def _to_bin(x):
+        return np.array([float(s) for s in ToBin._bin(x)])
+
+    @staticmethod
+    def _bin(x):
+        return format(x, 'b').zfill(4)
 
 
 def get_dataframe_from_row(df, index):
