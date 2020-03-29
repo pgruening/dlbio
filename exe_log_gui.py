@@ -108,21 +108,36 @@ def add_logfiles(file_list, regex=None):
 
     return full_paths
 
-
 def read_items(event, full_paths, master, lab_current_file):
     global CHECKBOXES, CHECK_VARS
-
-    while CHECKBOXES:
-        CHECK_VARS.pop()
-        c = CHECKBOXES.pop()
-        c.pack_forget()
 
     file_list = event.widget
     file, item = load_current(file_list, full_paths)
 
+    names = []
+    boxes = []
+    keys = []
+
+    for checkbox in CHECKBOXES:
+        text = checkbox.cget('text').split(':')[0] 
+        boxes.append(text) 
+
     for key, value in file.items():
         name = f'{key}: {len(value)}'
-        add_check_box(master, name)
+        names.append(name)
+        keys.append(key)
+
+    for checkbox in reversed(CHECKBOXES):
+        text = checkbox.cget('text').split(':')[0] 
+        if not text in keys:
+            i = CHECKBOXES.index(checkbox)
+            CHECK_VARS.remove(CHECK_VARS[i])
+            CHECKBOXES.remove(checkbox)
+            checkbox.pack_forget()
+ 
+    for name in names:
+        if not name.split(':')[0] in boxes:
+            add_check_box(master, name)
 
     lab_current_file.config(text=item)
 
@@ -174,5 +189,5 @@ def load_current(file_list, full_paths):
 
 if __name__ == "__main__":
     #import os
-    # os.chdir('/nfshome/gruening/my_code/DLBio_repos/log_layers/experiments/cifar10')
+    #os.chdir('/nfshome/gmelin/Desktop/experiments/logfiles/')
     run()
