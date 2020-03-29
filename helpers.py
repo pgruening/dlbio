@@ -40,7 +40,7 @@ class MyDataFrame():
     def __init__(self):
         self.x = dict()
 
-    def update(self, in_dict):
+    def update(self, in_dict, add_missing_values=False, missing_val=np.nan):
         for k, v in in_dict.items():
 
             if isinstance(v, list):
@@ -50,6 +50,12 @@ class MyDataFrame():
                 self.x[k] = [v]
             else:
                 self.x[k].append(v)
+
+        if add_missing_values:
+            max_num_items = max([len(v) for v in self.x.values()])
+            for k in self.x.keys():
+                while len(self.x[k]) < max_num_items:
+                    self.x[k].append(missing_val)
 
     def add_col(self, key, col):
         self.x[key] = col
