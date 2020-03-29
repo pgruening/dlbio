@@ -198,7 +198,7 @@ class Training():
 
     def _save(self, epoch, epochs_):
         if self.do_save:
-            if epoch == epochs_ - 1 or epoch % self.save_steps == 1:
+            if epoch == epochs_ - 1 or epoch % self.save_steps == 0:
                 print(f'Saving {self.save_path}')
                 torch.save(self.train_interface.model, self.save_path)
 
@@ -222,6 +222,14 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             parameters,
             lr=learning_rate, weight_decay=kwargs.get('weight_decay', 0.001),
             betas=(kwargs.get('beta0', .9), kwargs.get('beta1', .999))
+        )
+    elif opt_id == 'AdaDelta':
+        optimizer = optim.Adadelta(
+            parameters,
+            lr=learning_rate,
+            weight_decay=kwargs.get('weight_decay', 0.),
+            rho=kwargs.get('rho', 0.9),
+            eps=kwargs.get('eps', 1e-3)
         )
     else:
         raise ValueError(f'Unknown opt value: {opt_id}')
