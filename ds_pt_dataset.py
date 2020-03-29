@@ -25,14 +25,25 @@ class SegmentationDataset(Dataset):
         self.__ran_data_check = False
 
     def _run_data_check(self):
-        expected_unique = np.arange(0, self.num_classes)
+        # make sure the label dimensions are right.
         expected_ndims = 2
+
+        # make sure the classes in the dataset match the expected classes
+        expected_unique = np.arange(0, self.num_classes)
+        class_occurences = np.zeros(expected_unique.shape)
+
         for y in self.labels:
             y_unique = np.unique(y.flatten())
-            assert (y_unique == expected_unique).min(), print(
-                f'{y_unique}!={expected_unique}')
+
+            for class_in_label in list(y_unique):
+                assert class_in_label in list(
+                    expected_unique), f'found class {class_in_label} that does not exist in expected: {expected_unique}'
+                class_occurences[int(class_in_label)] += 1.
 
             assert y.ndim == expected_ndims, f'expect shape (h, w), got {y.shape}'
+
+        for cl, co in zip(list(expected_unique), list(class_occurences)):
+            assert co > 0, f'Class {cl} was not found once in the labels.'
 
         # all input images should have the same dimension
         x_dims = set()
