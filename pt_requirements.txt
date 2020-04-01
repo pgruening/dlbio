@@ -3,7 +3,7 @@ atomicwrites==1.3.0
 attrs==19.1.0
 autopep8==1.4.4
 backcall==0.1.0
-bleach==3.1.2
+bleach==3.1.4
 bottle==0.12.17
 bottle-websocket==0.2.9
 colorama==0.4.1
