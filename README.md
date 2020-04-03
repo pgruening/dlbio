@@ -2,7 +2,7 @@
 
 This Repository aims to provide boiler plate code to quickly train, test, and evaluate deep learning architectures in Pytorch.
 
-##Interesting modules:
+## Interesting modules:
  - `helpers.py`: utility functions for path operations, number conversions, detection rectangles, and so on. With `MyDataFrame`, a simple data structure based on dictionaries is provided to quickly setup Pandas DataFrames.
 - `pt_training.py`: contains a class ‘training’ that comprises all necessary objects (optimizer, loss-functions, data-loader, …) and, upon calling, runs a typical pytorch training session. Furthermore, a default ArgumentParser is given that functions as a standard interface to select hyperparameters. Training results are saved to a log-file that is managed by the `Printer`.
 - `pt_train_printer.py`: an object that prints intermediate training results in the terminal window and additionally, writes them to a `.json` file.
@@ -13,7 +13,7 @@ This Repository aims to provide boiler plate code to quickly train, test, and ev
 - `ds_pt_dataset.py`: boiler plate code to implement custom datasets. For example, there is a SegmentationDataset class, that can be used on small sets that fit into RAM.
 - `pt_run_parallel.py`: useful for running several training processes. ITrainingProcess is a good interface to quickly setup and run a training process.
 
-##Naming Conventions:
+## Naming Conventions:
 ### Module prefixes
 - ‘pt’: pytorch, any module that imports, or at least heavily uses, pytorch packages.
 - ‘ds’: dataset, should contain a class that inherits a pytorch Dataset and has a getter function for an appropriate pytorch DataLoader.
