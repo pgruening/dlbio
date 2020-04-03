@@ -7,3 +7,5 @@ ssd/old_ssd_label_computations.py
 ._*.py
 ._pt_requirements.txt
 .vscode/launch.json
+examples/class_sample/*
+examples/class_sample/model_specs.json

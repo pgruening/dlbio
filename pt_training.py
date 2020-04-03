@@ -84,7 +84,7 @@ class ITrainInterface():
     """
 
     def __init__(self, *args, **kwargs):
-        """Constuctor. Usually you need to provide and process:
+        """Constructor. Usually you need to provide and process:
         - a model
         - a device
         - implement a loss function
@@ -150,7 +150,7 @@ class Training():
             computes the loss of a batch, see method _train_step
         save_steps : int, optional
             every 'save_steps' the model is save to 'save_path'. If 0, the
-            model is only saved on the end of the trainig. By default -1,
+            model is only saved on the end of the training. By default -1,
             which means the model is not saved at all (if early_stopping is 
             None).
         save_path : str, optional
@@ -408,7 +408,7 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1):
         the learning rate is altered in 'lr_steps' uniformly steps
     epochs : int
         number of epochs for the entire training
-    optimizer : pytroch optimizer
+    optimizer : pytorch optimizer
     gamma : float, optional
         the learning rate is multiplied by gamma, by default .1
 
@@ -496,7 +496,7 @@ def loss_verification(train_interface, data_loader, printer):
     Parameters
     ----------
     train_interface : ITrainInterface
-    data_loader : pytroch data_loader
+    data_loader : pytorch data_loader
     printer : Printer (pt_train_printer.py)
     """
     # verify loss
@@ -526,13 +526,13 @@ class EarlyStopping():
     """
 
     def __init__(self, metric_key, get_max=True, epoch_thres=np.inf):
-        """Costructor. You need to specify which metric should be observed,
+        """Constructor. You need to specify which metric should be observed,
         if the value is better when decreased or increased.
-        For example 
+        For example:
         EarlyStopping('val_acc', get_max=True, epoch_thres=10)
         keeps track of the validation accuracy. If the current best validation
         accuracy (starting from -inf) is exceeded, this value is saved and 
-        furthermore, the model is saved.
+        the model is saved.
 
         If after 10 epochs the best accuracy is not exceeded, the training
         is stopped.
