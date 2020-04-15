@@ -8,15 +8,13 @@ import warnings
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import torch.nn.functional as F
 import torchvision.transforms as transforms
 
+import torch
+import torch.nn.functional as F
 from DLBio.pytorch_helpers import cuda_to_numpy
 
-from . import (aug_augmentation_functions, helpers, learning_rate_policy,
-               process_image_patchwise)
-from .helpers import safe_division
+from . import helpers, process_image_patchwise
 
 
 class PytorchNeuralNetwork(object):
