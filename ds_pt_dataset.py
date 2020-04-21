@@ -22,7 +22,7 @@ class SegmentationDataset(Dataset):
             lambda x: print('implement data_aug!')
         )
 
-        self.__ran_data_check = False
+        self._ran_data_check = False
 
     def _run_data_check(self):
         # make sure the label dimensions are right.
@@ -55,10 +55,10 @@ class SegmentationDataset(Dataset):
 
         assert len(x_dims) == 1
 
-        self.__ran_data_check = True
+        self._ran_data_check = True
 
     def __getitem__(self, index):
-        assert self.__ran_data_check, 'Run self._run_data_check() in your init!'
+        assert self._ran_data_check, 'Run self._run_data_check() in your init!'
         index = self._compute_index(index)
         x, y = np.copy(self.images[index]), np.copy(self.labels[index])
 
