@@ -194,6 +194,7 @@ class Training():
         else:
             self.printer = printer
 
+        assert isinstance(save_steps, int)
         if save_steps > 0:
             assert save_path is not None
 
