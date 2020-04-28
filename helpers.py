@@ -8,6 +8,7 @@ import random
 import shutil
 import time
 import warnings
+from datetime import datetime
 
 import cv2
 import matplotlib
@@ -33,8 +34,18 @@ def check_mkdir(directory_or_file, is_dir=False):
 
 
 def save_options(file_path, options):
+    out_dict = options.__dict__
+
+    # add the current time to the output
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y-%H:%M:%S")
+
+    out_dict.update({
+        'start_time': dt_string
+    })
+
     with open(file_path, 'w') as file:
-        json.dump(options.__dict__, file)
+        json.dump(out_dict, file)
 
 
 class MyDataFrame():
