@@ -10,6 +10,7 @@ import time
 import warnings
 
 import cv2
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -71,6 +72,14 @@ class MyDataFrame():
             return False
 
         return True
+
+
+def set_plt_font_size(font_size):
+    # font = {'family' : 'normal',
+    #    'weight' : 'bold',
+    #    'size'   : 22}
+    font = {'size': font_size}
+    matplotlib.rc('font', **font)
 
 
 class ToBin():
