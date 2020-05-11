@@ -98,6 +98,8 @@ class ToBin():
         self.n = n
 
     def __call__(self, arr):
+        if isinstance(arr, int):
+            return np.stack(ToBin._to_bin(arr), 0)
         assert arr.ndim == 1
         out = [ToBin._to_bin(int(x)) for x in list(arr)]
         return np.stack(out, 0)
