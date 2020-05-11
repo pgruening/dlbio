@@ -2,6 +2,13 @@
 
 This Repository aims to provide boiler plate code to quickly train, test, and evaluate deep learning architectures in Pytorch.
 
+## Install Guide
+```
+git clone https://github.com/pgruening/dlbio.git
+cd dlbio
+pip install -e .
+```
+
 ## Interesting modules:
  - `helpers.py`: utility functions for path operations, number conversions, detection rectangles, and so on. With `MyDataFrame`, a simple data structure based on dictionaries is provided to quickly setup Pandas DataFrames.
 - `pt_training.py`: contains a class ‘training’ that comprises all necessary objects (optimizer, loss-functions, data-loader, …) and, upon calling, runs a typical pytorch training session. Furthermore, a default ArgumentParser is given that functions as a standard interface to select hyperparameters. Training results are saved to a log-file that is managed by the `Printer`.
