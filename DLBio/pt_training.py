@@ -400,7 +400,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     return optimizer
 
 
-def get_scheduler(lr_steps, epochs, optimizer, gamma=.1):
+def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
     """returns a pytorch scheduler
 
     Parameters
@@ -417,6 +417,16 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1):
     -------
     pytorch scheduler
     """
+
+    if fixed_steps is not None:
+        assert lr_steps == 0, 'no lr_steps if fixed steps is used'
+        # might be filled with strings, when coming from argparse
+        fixed_steps = [int(x) for x in fixed_steps]
+        scheduler = optim.lr_scheduler.MultiStepLR(
+            optimizer, fixed_steps,
+            gamma=gamma
+        )
+
     if lr_steps < 1:
         return None
 
