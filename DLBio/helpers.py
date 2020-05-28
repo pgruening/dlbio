@@ -99,18 +99,16 @@ class ToBin():
 
     def __call__(self, arr):
         if isinstance(arr, int):
-            return np.stack(ToBin._to_bin(arr), 0)
+            return np.stack(self._to_bin(arr), 0)
         assert arr.ndim == 1
-        out = [ToBin._to_bin(int(x)) for x in list(arr)]
+        out = [self._to_bin(int(x)) for x in list(arr)]
         return np.stack(out, 0)
 
-    @staticmethod
-    def _to_bin(x):
-        return np.array([float(s) for s in ToBin._bin(x)])
+    def _to_bin(self, x):
+        return np.array([float(s) for s in self._bin(x)])
 
-    @staticmethod
-    def _bin(x):
-        return format(x, 'b').zfill(4)
+    def _bin(self, x):
+        return format(x, 'b').zfill(self.n)
 
 
 def get_dataframe_from_row(df, index):
