@@ -426,6 +426,8 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
             optimizer, fixed_steps,
             gamma=gamma
         )
+        print(f'fixed rate scheduling at: {fixed_steps}')
+        return scheduler
 
     if lr_steps < 1:
         return None
