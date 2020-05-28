@@ -9,3 +9,7 @@ ssd/old_ssd_label_computations.py
 .vscode/launch.json
 examples/class_sample/*
 examples/class_sample/model_specs.json
+DLBio.egg-info/dependency_links.txt
+DLBio.egg-info/PKG-INFO
+DLBio.egg-info/top_level.txt
+DLBio.egg-info/SOURCES.txt
