@@ -132,7 +132,8 @@ class Training():
             self, optimizer, data_loader, train_interface,
             save_steps=-1, save_path=None,
             printer=None, scheduler=None, clip=None,
-            retain_graph=False, val_data_loader=None, early_stopping=None
+            retain_graph=False, val_data_loader=None, early_stopping=None,
+            validation_only=False
     ):
         """Constructor
 
@@ -208,6 +209,10 @@ class Training():
         self.phases = ['train']
         if val_data_loader is not None:
             self.phases.append('validation')
+
+        if validation_only:
+            self.phases = ['validation']
+            print('Running in validation only mode.')
 
         self.data_loaders_ = {'train': data_loader,
                               'validation': val_data_loader}
