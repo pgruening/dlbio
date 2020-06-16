@@ -27,7 +27,7 @@ class IRectangle(object):
                 the value defines how certain this rectangle contains an object.
         """
         self.id = kwargs.pop('id', None)
-        self.confidence = kwargs.pop('confidence', 1.0)
+        self.confidence = kwargs.pop('confidence', -1.0)
 
         if len(kwargs.keys()) > 0:
             warnings.warn(
@@ -156,7 +156,7 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
         self.type_id = kwargs.pop('type_id', 'unknown')
         super(ViewableTopLeftRectangle, self).__init__(**kwargs)
 
-    def add_cv_rectangle(self, image, color=None):
+    def add_cv_rectangle(self, image, color=None, write_confidence=True, **kwargs):
         """Draw a rectangle on the image via openCV
 
         Parameters
@@ -172,6 +172,26 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
             (self.x + self.w, self.y + self.h),
             color
         )
+
+        if self.confidence != -1.0 and write_confidence:
+            off_x = kwargs.get('off_x', 0)
+            off_y = kwargs.get('off_y', 0)
+            position = (int(self.x + off_x), int(self.y + off_y))
+
+            font_size = int(kwargs.get('font_size', 1))
+
+            font_color = kwargs.get(
+                'font_color', (0, 255, 0))  # default: green
+
+            cv2.putText(
+                image,  # numpy array on which text is written
+                f'{self.confidence:.2f}',  # text
+                position,  # position at which writing has to start
+                cv2.FONT_HERSHEY_SIMPLEX,  # font family
+                font_size,  # font size
+                font_color,  # font color
+                3
+            )  # font stroke
 
     def get_pyplot_patch(self):
         """Return a pyplot platch that can by added to a plot axis.
