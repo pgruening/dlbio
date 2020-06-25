@@ -133,7 +133,7 @@ class Training():
             save_steps=-1, save_path=None,
             printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None,
-            validation_only=False
+            validation_only=False, save_state_dict=False
     ):
         """Constructor
 
@@ -176,7 +176,8 @@ class Training():
         early_stopping : EarlyStopping object, optional
             save the model based on a specified metric, each time the best 
             value of this metric is reached. By default None, no early stopping
-
+        validation_only: when called, only the validation steps are computed
+        save_state_dict: save the model's state dict instead of the model
         Returns
         -------
         Training object
@@ -202,6 +203,8 @@ class Training():
         self.do_save = save_steps > 0 and save_path is not None
         self.save_steps = save_steps
         self.save_path = save_path
+        self.save_state_dict = save_state_dict
+        print(self.save_state_dict)
 
         self.clip = clip
         self.retain_graph = retain_graph
@@ -243,8 +246,11 @@ class Training():
 
                 for sample in self.data_loaders_[current_phase]:
 
-                    loss, metrics = self._train_step(sample, current_phase)
-                    self._update_printer(epoch, loss, metrics, current_phase)
+                    loss, metrics, counters = self._train_step(
+                        sample, current_phase)
+                    self._update_printer(
+                        epoch, loss, metrics, counters, current_phase
+                    )
 
                     if current_phase == 'train':
                         self._update_weights(loss)
@@ -253,7 +259,8 @@ class Training():
                     do_stop = self.early_stopping(
                         self.printer.get_metrics(),
                         self.train_interface.model,
-                        self.save_path
+                        self.save_path,
+                        self.save_state_dict
                     )
                 self.printer.on_epoch_end()
 
@@ -281,10 +288,18 @@ class Training():
         """
         if current_phase == 'validation':
             with torch.no_grad():
-                loss, metrics = self.train_interface.val_step(sample)
+                #loss, metrics, counters = self.train_interface.val_step(sample)
+                output = self.train_interface.val_step(sample)
         else:
-            loss, metrics = self.train_interface.train_step(sample)
-        return loss, metrics
+            #loss, metrics, counters = self.train_interface.train_step(sample)
+            output = self.train_interface.train_step(sample)
+        if len(output) == 2:
+            loss, metrics = output[0], output[1]
+            counters = None
+        else:
+            loss, metrics, counters = output[0], output[1], output[2]
+
+        return loss, metrics, counters
 
     def _update_weights(self, loss):
         """Compute gradient and apply backpropagation
@@ -304,7 +319,7 @@ class Training():
 
         self.optimizer.step()
 
-    def _update_printer(self, epoch, loss, metrics, current_phase):
+    def _update_printer(self, epoch, loss, metrics, counters, current_phase):
         """Pass the necessary values to the printer
 
         Parameters
@@ -320,11 +335,16 @@ class Training():
 
         """
         if current_phase == 'train':
-            self.printer.update(loss, epoch, metrics)
+            self.printer.update(loss, epoch, metrics, counters)
         else:
             if metrics is not None:
                 metrics = {'val_' + k: v for (k, v) in metrics.items()}
-            self.printer.update(loss, epoch, metrics, loss_key='val_loss')
+            if counters is not None:
+                counters = {'val_' + k: v for (k, v) in counters.items()}
+            self.printer.update(
+                loss, epoch, metrics,
+                counters, loss_key='val_loss'
+            )
 
         self.printer.print_conditional()
 
@@ -348,7 +368,16 @@ class Training():
         if self.do_save:
             if epoch == epochs_ - 1 or epoch % self.save_steps == 0:
                 print(f'Saving {self.save_path}')
-                torch.save(self.train_interface.model, self.save_path)
+                if self.save_state_dict:
+                    print('save as state dict')
+                    to_save = self.train_interface.model.state_dict()
+
+                    torch.save(
+                        to_save,
+                        self.save_path
+                    )
+                else:
+                    torch.save(self.train_interface.model, self.save_path)
 
 
 def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
@@ -581,27 +610,33 @@ class EarlyStopping():
         else:
             self.current_val = +np.inf
 
-    def __call__(self, metrics, model, save_path):
+    def __call__(self, metrics, model, save_path, save_state_dict):
         value = metrics[self.key]
 
         self.no_update_counter += 1
         if self.get_max:
             if value > self.current_val:
-                self._update(value, model, save_path)
+                self._update(value, model, save_path, save_state_dict)
         else:
             if value < self.current_val:
-                self._update(value, model, save_path)
+                self._update(value, model, save_path, save_state_dict)
 
         if self.no_update_counter > self.thres:
             return True
         else:
             return False
 
-    def _update(self, value, model, save_path):
+    def _update(self, value, model, save_path, save_state_dict):
         self.no_update_counter = 0
         self.current_val = value
-        torch.save(model, save_path)
+
         print(f'saving model: {save_path}')
+        if save_state_dict:
+            print('save as state dict')
+            to_save = model.state_dict()
+            torch.save(to_save, save_path)
+        else:
+            torch.save(model, save_path)
 
 
 def get_printer(print_intervall, log_file=None):

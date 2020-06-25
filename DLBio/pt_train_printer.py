@@ -19,11 +19,12 @@ class Printer(object):
         self.counter = 0.0
         self.learning_rate = -1.
         self.metrics = dict()
+        self.counters = dict()
         self.start_time = time.time()
         self.time_needed = 0.
         self.loss_key = 'loss'
 
-    def update(self, loss, epoch, metrics=None, loss_key='loss'):
+    def update(self, loss, epoch, metrics=None, counters=None, loss_key='loss'):
         self.loss_key = loss_key
         self.loss += loss.item()
         self.counter += 1.0
@@ -39,6 +40,13 @@ class Printer(object):
                 else:
                     self.metrics[key] += val
 
+        if counters is not None:
+            for key, val in counters.items():
+                if key not in self.counters.keys():
+                    self.counters[key] = val
+                else:
+                    self.counters[key] += val
+
     def print_conditional(self):
         if self.counter % self.print_intervall == 0:
             self.print()
@@ -50,6 +58,9 @@ class Printer(object):
         out_str = f'Ep: {self.epoch}, {self.loss_key}: {self.loss/self.counter:.5f}'
         for key, val in self.metrics.items():
             out_str += f' {key}: {val/self.counter:.3f}'
+        for key, val in self.counters.items():
+            out_str += f' {key}: {val:.3f}'
+
         out_str += f' lr: {self.learning_rate:.5f}'
         out_str += f' sec: {self.time_needed:.2f}'
         return out_str
@@ -72,6 +83,10 @@ class Printer(object):
         for key, val in self.metrics.items():
             output_dict = self._check_write(
                 output_dict, key, val / self.counter)
+
+        for key, val in self.counters.items():
+            output_dict = self._check_write(
+                output_dict, key, val)
 
         with open(self.log_file, 'w') as file:
             json.dump(output_dict, file)
