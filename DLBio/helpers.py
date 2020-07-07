@@ -131,7 +131,8 @@ def _get_directory(directory_or_file):
 
 def find_image(im_path, labels_):
     found_ = [x for x in labels_ if is_match(im_path, x)]
-    assert found_
+    if not found_:
+        return None
     assert len(found_) == 1
     return found_[0]
 
