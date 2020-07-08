@@ -53,7 +53,11 @@ class CellSegmentationModel(PytorchNeuralNetwork):
 
         net_out = self.cnn(input.unsqueeze(0))
 
-        out_seg = net_out['seg']
+        if isinstance(net_out, dict):
+            out_seg = net_out['seg']
+        else:
+            out_seg = net_out
+
         # hourglass
         if isinstance(out_seg, list):
             tmp = torch.zeros(out_seg[0].shape).float().cuda()
@@ -64,6 +68,9 @@ class CellSegmentationModel(PytorchNeuralNetwork):
 
         out_seg = F.softmax(out_seg, dim=1)
         output = cuda_to_numpy(out_seg)
+
+        if not isinstance(net_out, dict):
+            return output
 
         if 'dir' in net_out.keys():
             out_dir = net_out['dir']
