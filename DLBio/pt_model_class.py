@@ -5,7 +5,7 @@ from torchvision import transforms
 
 from .helpers import to_uint8_image
 from .nn_pytorch_model import PytorchNeuralNetwork
-from .pytorch_helpers import cuda_to_numpy
+from .pytorch_helpers import cuda_to_numpy, image_batch_to_tensor
 
 
 class CellSegmentationModel(PytorchNeuralNetwork):
@@ -47,11 +47,17 @@ class CellSegmentationModel(PytorchNeuralNetwork):
         np.array
             output of the keras model
         """
-        input = self.to_tensor(input[0, ...]).float().cuda()
+        if input.ndim == 3:
+            input = self.to_tensor(input[0, ...]).float()
+            input = input.to(self.device).unsqueeze(0)
+        else:
+            input = image_batch_to_tensor(input).to(self.device)
+
         if self.normalization is not None:
             input = self.normalization(input)
 
-        net_out = self.cnn(input.unsqueeze(0))
+        with torch.no_grad():
+            net_out = self.cnn(input)
 
         if isinstance(net_out, dict):
             out_seg = net_out['seg']

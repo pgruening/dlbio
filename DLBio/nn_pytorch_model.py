@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 
 import torch
 import torch.nn.functional as F
-from DLBio.pytorch_helpers import cuda_to_numpy
+from DLBio.pytorch_helpers import cuda_to_numpy, image_batch_to_tensor
 
 from . import helpers, process_image_patchwise
 
@@ -20,12 +20,15 @@ from . import helpers, process_image_patchwise
 class PytorchNeuralNetwork(object):
 
     def __init__(self,
+                 device,
                  model_id,
                  pre_process_function,
                  setup_function=None,
                  post_process_fcn=None,
                  to_tensor_fcn=transforms.ToTensor(),
-                 normalization=None
+                 normalization=None,
+                 fast_prediction=False,
+                 batch_size=4,
                  ):
         """ Basic Neural Network (nn_) for instance segmentation.
         Consists of a pre-processing function (pref_*),
@@ -61,7 +64,7 @@ class PytorchNeuralNetwork(object):
         tensorboard_batch_size : 
 
         """
-
+        self.device = device
         self.ID = model_id
 
         self.pre_process_function = pre_process_function
@@ -79,6 +82,9 @@ class PytorchNeuralNetwork(object):
 
         self.num_classes = 2  # default for binary
         self.normalization = normalization
+
+        self.fast_p = fast_prediction
+        self.bs = batch_size
 
     def do_task(self, input, do_pre_proc):
         raise NotImplementedError
@@ -128,7 +134,9 @@ class PytorchNeuralNetwork(object):
             else:
                 return process_image_patchwise.whole_image_segmentation(
                     self,
-                    input
+                    input,
+                    fast_prediction=self.fast_p,
+                    batch_size=self.bs
                 )
         else:
             return self._cnn_predict(input)
@@ -146,7 +154,12 @@ class PytorchNeuralNetwork(object):
         np.array
             output of the keras model
         """
-        input = self.to_tensor(input[0, ...]).float().cuda()
+        if input.ndim == 3:
+            input = self.to_tensor(input[0, ...]).float()
+            input = input.to(self.device).unsqueeze(0)
+        else:
+            input = image_batch_to_tensor(input).to(self.device)
+
         if self.normalization is not None:
             input = self.normalization(input)
 

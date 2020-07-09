@@ -40,6 +40,14 @@ def cuda_to_numpy(x):
         raise ValueError('Unkwnown dimensionality: {}'.format(x.dim()))
 
 
+def image_batch_to_tensor(x):
+    assert x.dtype == 'uint8'
+    assert x.ndim == 4
+    x = torch.Tensor(x.astype('float32') / 255.)
+    x = x.permute([0, 3, 1, 2])
+    return x
+
+
 def check_norm(model):
     P = ctr_ = 0.0
     for p in list(filter(lambda p: p.grad is not None, model.parameters())):

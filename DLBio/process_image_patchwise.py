@@ -7,7 +7,7 @@ DEBUG_PATCHWISE_SEGMENTATION = False
 SHOW_IDX = 1
 
 
-def whole_image_segmentation(model, image):
+def whole_image_segmentation(model, image, fast_prediction=False, batch_size=4):
 
     input_shape = model.get_input_shape()
     output_shape = model.get_output_shape_for_patchwise_processing()
@@ -33,13 +33,24 @@ def whole_image_segmentation(model, image):
         output_patch_size = {'x': output_patch_size['x'] - 2 * pad_x,
                              'y': output_patch_size['y'] - 2 * pad_y}
 
-        def cnn_function(x):
-            return model._predict(
-                x, False, predict_patch=True)[pad_y:-pad_y, pad_x:-pad_x, :]
+        def cnn_function(x, full_batch=False):
+            out = model._predict(x, False, predict_patch=True)
+            if out.ndim == 4 and not full_batch:
+                out = out[0, pad_y:-pad_y, pad_x:-pad_x, :]
+            elif out.ndim == 4 and full_batch:
+                return out[:, pad_y:-pad_y, pad_x:-pad_x, :]
+            else:
+                return out[pad_y:-pad_y, pad_x:-pad_x, :]
 
     else:
-        def cnn_function(x): return model._predict(
-            x, False, predict_patch=True)
+        def cnn_function(x, full_batch=False):
+            out = model._predict(x, False, predict_patch=True)
+            if out.ndim == 4 and not full_batch:
+                out = out[0, ...]
+            elif out.ndim == 4 and full_batch:
+                return out
+            else:
+                return out
 
     # if the original image size is smaller than the input of the network
     # the image is padded downwart and upward and cut back to shape later on
@@ -60,14 +71,19 @@ def whole_image_segmentation(model, image):
                                     padding=padding_size,
                                     pad_method='symmetric')
 
-    output = patchwise_image_segmentation(cnn_function,
-                                          image_padded,
-                                          original_image_size,
-                                          input_patch_size,
-                                          output_patch_size,
-                                          output_full_size,
-                                          padding_size,
-                                          model.get_num_classes())
+    output = patchwise_image_segmentation(
+        cnn_function,
+        image_padded,
+        original_image_size,
+        input_patch_size,
+        output_patch_size,
+        output_full_size,
+        padding_size,
+        model.get_num_classes(),
+        use_fast=fast_prediction,
+        batch_size=batch_size
+
+    )
 
     # cutting back to original image size
     if padded_to_fit_input:
@@ -83,6 +99,54 @@ def get_patch(padded_image, coordinates):
     return padded_image[y[0]:y[1], x[0]:x[1]]
 
 
+class ImagePatch(object):
+    def __init__(self, **kwargs):
+        self.input_patch = kwargs['input_patch']
+        self.in_x = kwargs['in_x']
+        self.in_y = kwargs['in_y']
+        self.out_x = kwargs['out_x']
+        self.out_y = kwargs['out_y']
+
+        self.output = None
+
+
+def _process(patches_, network_output_fcn, batch_size=4):
+    processed_patches = []
+    while patches_:
+        tmp = []
+        while len(tmp) < batch_size and patches_:
+            tmp.append(patches_.pop())
+
+        processed_patches += (__process_batch(tmp, network_output_fcn))
+
+    return processed_patches
+
+
+def _write(patches_, full_output):
+    for patch in patches_:
+        out_y = patch.out_y
+        out_x = patch.out_x
+        in_y = patch.in_y
+        in_x = patch.in_x
+        network_output = patch.output
+
+        tmp = network_output[in_y[0]:in_y[1], in_x[0]:in_x[1], ...]
+        full_output[out_y[0]:out_y[1], out_x[0]:out_x[1], ...] = tmp
+
+    return full_output
+
+
+def __process_batch(batch, network_output_fcn):
+    input_batch = [x.input_patch for x in batch]
+    input_batch = np.stack(input_batch, 0)
+    output = network_output_fcn(input_batch, full_batch=True)
+
+    for i in range(output.shape[0]):
+        batch[i].output = output[i, ...]
+
+    return batch
+
+
 def patchwise_image_segmentation(network_output_fcn,
                                  padded_image,
                                  original_image_size,
@@ -92,9 +156,11 @@ def patchwise_image_segmentation(network_output_fcn,
                                  padding_size,
                                  num_classes,
                                  downsample_factor=1,
-                                 network_input_fcn=get_patch
+                                 network_input_fcn=get_patch,
+                                 use_fast=True,
+                                 batch_size=4
                                  ):
-    """ 
+    """
       Function that processes a padded image patchwise and writes the
       output to an image with the shape given in output_full_size size.
       This function assumes that the middle of the input patch corresponds to
@@ -131,7 +197,7 @@ def patchwise_image_segmentation(network_output_fcn,
       Input Coordinates -> Integer frame. Corresponding to the padded image.
       Padding size and Input_shape might not be identical. Therefore the
       padding vector (padding at one side e.g. left) is used to compute the
-      coordinates of this frame. 
+      coordinates of this frame.
 
       Output Coordinates -> Integer frame. Corresponding to the output image.
 
@@ -151,7 +217,7 @@ def patchwise_image_segmentation(network_output_fcn,
         |-input-|
           <---| .5 * input
       <---| + pad
-      ->| .5*(input - output)    
+      ->| .5*(input - output)
       #######################################
     """
 
@@ -236,6 +302,7 @@ def patchwise_image_segmentation(network_output_fcn,
     )
 
     # ------------- start of process -------------------------------------------
+    patches_ = []
     for _i in range(num_steps_y):
         for _j in range(num_steps_x):
 
@@ -269,7 +336,9 @@ def patchwise_image_segmentation(network_output_fcn,
 
             network_input = network_input_fcn(
                 padded_image, {'x': in_x, 'y': in_y})
-            network_output = network_output_fcn(network_input)
+            if not use_fast:
+                # case: is_single_image
+                network_output = network_output_fcn(network_input)
 
             # update the net indeces accordingly
             top_left_world = output_2_world(top_left_output)
@@ -285,9 +354,17 @@ def patchwise_image_segmentation(network_output_fcn,
             in_y = [top_left_network[1], down_right_network[1]]
             in_x = [top_left_network[0], down_right_network[0]]
 
-            full_output[out_y[0]:out_y[1], out_x[0]:out_x[1], ...
-                        ] = network_output[in_y[0]:in_y[1], in_x[0]:in_x[1],
-                                           ...]
+            if use_fast:
+                patches_.append(ImagePatch(
+                    input_patch=network_input,
+                    in_x=in_x,
+                    in_y=in_y,
+                    out_x=out_x,
+                    out_y=out_y
+                ))
+            else:
+                tmp = network_output[in_y[0]:in_y[1], in_x[0]:in_x[1], ...]
+                full_output[out_y[0]:out_y[1], out_x[0]:out_x[1], ...] = tmp
 
             ####################### debug: show whats happening ###############
             if DEBUG_PATCHWISE_SEGMENTATION:
@@ -329,6 +406,11 @@ def patchwise_image_segmentation(network_output_fcn,
         current_position_world[0] = 0
         current_position_world += step_y
 
+    if use_fast:
+        patches_ = _process(patches_, network_output_fcn,
+                            batch_size=batch_size)
+        full_output = _write(patches_, full_output)
+
     return full_output
 
 
@@ -337,8 +419,8 @@ def get_padded_image(original_image,
                      padding={'x': 0, 'y': 0},
                      pad_method='symmetric'):
     """
-      Returns a padded image as a pre processing step for the network 
-      segmentation. For fully convolutional networks the patch_size 
+      Returns a padded image as a pre processing step for the network
+      segmentation. For fully convolutional networks the patch_size
       (size of the examples it was trained with) needs to be specified. The
       image is then padded by half the patch size in each direction. If an
       end-to-end-trained network is used the padding is specified by the
@@ -366,7 +448,7 @@ def get_padded_image(original_image,
                                   ((pad_y, pad_y), (pad_x, pad_x), (0, 0)),
                                   pad_method,
                                   **{'constant_values': (
-                                      (255, 255),
+                                     (255, 255),
                                       (255, 255),
                                       (255, 255))
                                      }
