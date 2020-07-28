@@ -67,7 +67,7 @@ def search_in_all_subfolders(rgx, folder, search_which='files'):
         else:
             raise ValueError(f'unknown search_type: {search_which}')
 
-        if not files_:
+        if not to_search:
             continue
 
         tmp = [join(root, x) for x in to_search if is_rgx_match(rgx, x)]
