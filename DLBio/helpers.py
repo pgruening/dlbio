@@ -5,10 +5,12 @@ import glob
 import json
 import os
 import random
+import re
 import shutil
 import time
 import warnings
 from datetime import datetime
+from os.path import join
 
 import cv2
 import matplotlib
@@ -46,6 +48,51 @@ def save_options(file_path, options):
 
     with open(file_path, 'w') as file:
         json.dump(out_dict, file)
+
+
+def search_in_all_subfolders(rgx, folder, search_which='files'):
+    # TODO: rename to find
+    def is_rgx_match(rgx, x):
+        return bool(re.match(rgx, x))
+    outputs = []
+    assert os.path.isdir(folder), f'folder not found: {folder}'
+
+    for root, dirs_, files_ in os.walk(folder):
+        if search_which == 'files':
+            to_search = files_
+        elif search_which == 'dirs':
+            to_search = dirs_
+        elif search_which == 'all':
+            to_search = files_ + dirs_
+        else:
+            raise ValueError(f'unknown search_type: {search_which}')
+
+        if not files_:
+            continue
+
+        tmp = [join(root, x) for x in to_search if is_rgx_match(rgx, x)]
+
+        outputs += tmp
+
+    return outputs
+
+
+def search_rgx(rgx, path):
+    found_items = []
+    for x in os.listdir(path):
+        if bool(re.match(rgx, x)):
+            found_items.append(x)
+
+    return found_items
+
+
+def get_subfolders(base_folder):
+    # TODO: rename to find
+    return next(os.walk(base_folder))[1]
+
+
+def get_parent_folder(folder):
+    return '/'.join(folder.split('/')[:-1])
 
 
 class MyDataFrame():
