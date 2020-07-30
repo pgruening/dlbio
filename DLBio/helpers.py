@@ -50,7 +50,7 @@ def save_options(file_path, options):
         json.dump(out_dict, file)
 
 
-def search_in_all_subfolders(rgx, folder, search_which='files'):
+def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False):
     # TODO: rename to find
     def is_rgx_match(rgx, x):
         return bool(re.match(rgx, x))
@@ -70,7 +70,12 @@ def search_in_all_subfolders(rgx, folder, search_which='files'):
         if not to_search:
             continue
 
-        tmp = [join(root, x) for x in to_search if is_rgx_match(rgx, x)]
+        if match_on_full_path:
+            tmp = [
+                join(root, x) for x in to_search if is_rgx_match(rgx, join(root, x))
+            ]
+        else:
+            tmp = [join(root, x) for x in to_search if is_rgx_match(rgx, x)]
 
         outputs += tmp
 
