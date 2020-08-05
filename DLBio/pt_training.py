@@ -246,10 +246,10 @@ class Training():
 
                 for sample in self.data_loaders_[current_phase]:
 
-                    loss, metrics, counters = self._train_step(
+                    loss, metrics, counters, functions = self._train_step(
                         sample, current_phase)
                     self._update_printer(
-                        epoch, loss, metrics, counters, current_phase
+                        epoch, loss, metrics, counters, functions, current_phase
                     )
 
                     if current_phase == 'train':
@@ -293,13 +293,18 @@ class Training():
         else:
             #loss, metrics, counters = self.train_interface.train_step(sample)
             output = self.train_interface.train_step(sample)
+
+        functions = None
+        counters = None
         if len(output) == 2:
             loss, metrics = output[0], output[1]
-            counters = None
+        if len(output) == 3:
+            loss, metrics, counters = output[0], output[1], output[2]
         else:
             loss, metrics, counters = output[0], output[1], output[2]
+            functions = output[3]
 
-        return loss, metrics, counters
+        return loss, metrics, counters, functions
 
     def _update_weights(self, loss):
         """Compute gradient and apply backpropagation
@@ -319,7 +324,7 @@ class Training():
 
         self.optimizer.step()
 
-    def _update_printer(self, epoch, loss, metrics, counters, current_phase):
+    def _update_printer(self, epoch, loss, metrics, counters, functions, current_phase):
         """Pass the necessary values to the printer
 
         Parameters
@@ -335,15 +340,18 @@ class Training():
 
         """
         if current_phase == 'train':
-            self.printer.update(loss, epoch, metrics, counters)
+            self.printer.update(loss, epoch, metrics, counters, functions)
         else:
             if metrics is not None:
                 metrics = {'val_' + k: v for (k, v) in metrics.items()}
             if counters is not None:
                 counters = {'val_' + k: v for (k, v) in counters.items()}
+            if functions is not None:
+                functions = {'val_' + k: v for (k, v) in functions.items()}
+
             self.printer.update(
                 loss, epoch, metrics,
-                counters, loss_key='val_loss'
+                counters, functions, loss_key='val_loss'
             )
 
         self.printer.print_conditional()

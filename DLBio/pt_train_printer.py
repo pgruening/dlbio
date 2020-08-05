@@ -2,18 +2,42 @@ import json
 import time
 
 
+class IPrinterFcn():
+    def update(self):
+        raise NotImplementedError()
+
+    def __call__(self):
+        raise NotImplementedError()
+
+    def restart(self):
+        raise NotImplementedError()
+
+
 class Printer(object):
-    def __init__(self, print_intervall, log_file=None):
+    def __init__(self, print_intervall, log_file=None, dont_print_list=None):
         self.print_intervall = print_intervall
         self.log_file = log_file
+        self.dont_print = dont_print_list
 
         if self.log_file is not None:
             with open(self.log_file, 'w') as file:
                 output_dict = dict()
                 json.dump(output_dict, file)
+
+        self.functions = None
+        self.restart()
+
+    def on_epoch_end(self):
+        self.print()
+        if self.log_file is not None:
+            self.write_to_log()
         self.restart()
 
     def restart(self):
+        if self.functions is not None:
+            for fcn in self.functions.values():
+                fcn.restart()
+
         self.loss = 0.0
         self.epoch = -1
         self.counter = 0.0
@@ -23,8 +47,9 @@ class Printer(object):
         self.start_time = time.time()
         self.time_needed = 0.
         self.loss_key = 'loss'
+        self.functions = None
 
-    def update(self, loss, epoch, metrics=None, counters=None, loss_key='loss'):
+    def update(self, loss, epoch, metrics=None, counters=None, functions=None, loss_key='loss'):
         self.loss_key = loss_key
         self.loss += loss.item()
         self.counter += 1.0
@@ -47,6 +72,9 @@ class Printer(object):
                 else:
                     self.counters[key] += val
 
+        if functions is not None:
+            self.functions = functions
+
     def print_conditional(self):
         if self.counter % self.print_intervall == 0:
             self.print()
@@ -60,6 +88,9 @@ class Printer(object):
             out_str += f' {key}: {val/self.counter:.3f}'
         for key, val in self.counters.items():
             out_str += f' {key}: {val:.3f}'
+
+        for key, fcn in self.functions.items():
+            out_str += f' {key}: {fcn():.3f}'
 
         out_str += f' lr: {self.learning_rate:.5f}'
         out_str += f' sec: {self.time_needed:.2f}'
@@ -88,6 +119,9 @@ class Printer(object):
             output_dict = self._check_write(
                 output_dict, key, val)
 
+        for key, fcn in self.functions.items():
+            output_dict = self._check_write(output_dict, key, fcn())
+
         with open(self.log_file, 'w') as file:
             json.dump(output_dict, file)
 
@@ -97,12 +131,6 @@ class Printer(object):
         else:
             output_dict[key].append(value)
         return output_dict
-
-    def on_epoch_end(self):
-        self.print()
-        if self.log_file is not None:
-            self.write_to_log()
-        self.restart()
 
     def get_metrics(self):
         assert self.counter > 0
