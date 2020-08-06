@@ -115,6 +115,13 @@ class ITrainInterface():
         # usually exactly the same as the train step
         return self.train_step(*args, **kwargs)
 
+    def test_step(self, *args, **kwargs):
+        """
+        By default, the same code as in val_step is excecuted.
+        """
+        # usually exactly the same as the train step
+        return self.val_step(*args, **kwargs)
+
 
 class Training():
     """Class that contains all necessary ingredients to train a pytorch
@@ -133,7 +140,8 @@ class Training():
             save_steps=-1, save_path=None,
             printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None,
-            validation_only=False, save_state_dict=False
+            validation_only=False, save_state_dict=False,
+            test_data_loader=None
     ):
         """Constructor
 
@@ -213,12 +221,18 @@ class Training():
         if val_data_loader is not None:
             self.phases.append('validation')
 
+        if test_data_loader is not None:
+            self.phases.append('test')
+
         if validation_only:
             self.phases = ['validation']
             print('Running in validation only mode.')
 
-        self.data_loaders_ = {'train': data_loader,
-                              'validation': val_data_loader}
+        self.data_loaders_ = {
+            'train': data_loader,
+            'validation': val_data_loader,
+            'test': test_data_loader
+        }
 
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
@@ -246,7 +260,7 @@ class Training():
 
                 for sample in self.data_loaders_[current_phase]:
 
-                    loss, metrics, counters, functions = self._train_step(
+                    loss, metrics, counters, functions = self._iteration_step(
                         sample, current_phase)
                     self._update_printer(
                         epoch, loss, metrics, counters, functions, current_phase
@@ -270,7 +284,7 @@ class Training():
             if do_stop:
                 return
 
-    def _train_step(self, sample, current_phase):
+    def _iteration_step(self, sample, current_phase):
         """Compute loss and metrics
 
         Parameters
@@ -290,6 +304,10 @@ class Training():
             with torch.no_grad():
                 #loss, metrics, counters = self.train_interface.val_step(sample)
                 output = self.train_interface.val_step(sample)
+        elif current_phase == 'test':
+            with torch.no_grad():
+                output = self.train_interface.test_step(sample)
+
         else:
             #loss, metrics, counters = self.train_interface.train_step(sample)
             output = self.train_interface.train_step(sample)
@@ -342,16 +360,17 @@ class Training():
         if current_phase == 'train':
             self.printer.update(loss, epoch, metrics, counters, functions)
         else:
+            prefix = {'validation': 'val_', 'test': 'test_'}[current_phase]
             if metrics is not None:
-                metrics = {'val_' + k: v for (k, v) in metrics.items()}
+                metrics = {prefix + k: v for (k, v) in metrics.items()}
             if counters is not None:
-                counters = {'val_' + k: v for (k, v) in counters.items()}
+                counters = {prefix + k: v for (k, v) in counters.items()}
             if functions is not None:
-                functions = {'val_' + k: v for (k, v) in functions.items()}
+                functions = {prefix + k: v for (k, v) in functions.items()}
 
             self.printer.update(
                 loss, epoch, metrics,
-                counters, functions, loss_key='val_loss'
+                counters, functions, loss_key=prefix + 'loss'
             )
 
         self.printer.print_conditional()
