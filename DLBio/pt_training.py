@@ -316,7 +316,7 @@ class Training():
         counters = None
         if len(output) == 2:
             loss, metrics = output[0], output[1]
-        if len(output) == 3:
+        elif len(output) == 3:
             loss, metrics, counters = output[0], output[1], output[2]
         else:
             loss, metrics, counters = output[0], output[1], output[2]

@@ -89,8 +89,9 @@ class Printer(object):
         for key, val in self.counters.items():
             out_str += f' {key}: {val:.3f}'
 
-        for key, fcn in self.functions.items():
-            out_str += f' {key}: {fcn():.3f}'
+        if self.functions is not None:
+            for key, fcn in self.functions.items():
+                out_str += f' {key}: {fcn():.3f}'
 
         out_str += f' lr: {self.learning_rate:.5f}'
         out_str += f' sec: {self.time_needed:.2f}'
@@ -119,8 +120,9 @@ class Printer(object):
             output_dict = self._check_write(
                 output_dict, key, val)
 
-        for key, fcn in self.functions.items():
-            output_dict = self._check_write(output_dict, key, fcn())
+        if self.functions is not None:
+            for key, fcn in self.functions.items():
+                output_dict = self._check_write(output_dict, key, fcn())
 
         with open(self.log_file, 'w') as file:
             json.dump(output_dict, file)
@@ -133,8 +135,15 @@ class Printer(object):
         return output_dict
 
     def get_metrics(self):
-        assert self.counter > 0
-        return {k: v / self.counter for (k, v) in self.metrics.items()}
+        out = dict()
+        if self.metrics is not None:
+            out.update({k: v / self.counter for (k, v)
+                        in self.metrics.items()})
+        if self.counters is not None:
+            out.update({k: v for (k, v) in self.counters.items()})
+        if self.functions is not None:
+            out.update({k: v() for (k, v) in self.functions.items()})
+        return out
 
 
 if __name__ == "__main__":
