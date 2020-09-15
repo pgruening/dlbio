@@ -10,7 +10,7 @@ import shutil
 import time
 import warnings
 from datetime import datetime
-from os.path import join
+from os.path import join, isfile
 
 import cv2
 import matplotlib
@@ -48,6 +48,15 @@ def save_options(file_path, options):
 
     with open(file_path, 'w') as file:
         json.dump(out_dict, file)
+
+
+def load_json(file_path):
+    if not isfile(file_path):
+        return None
+
+    with open(file_path, 'r') as file:
+        out = json.load(file)
+    return out
 
 
 def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False):
