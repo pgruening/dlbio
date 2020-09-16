@@ -2,6 +2,7 @@ import collections
 import csv
 import datetime
 import glob
+import inspect
 import json
 import os
 import random
@@ -10,7 +11,7 @@ import shutil
 import time
 import warnings
 from datetime import datetime
-from os.path import join, isfile
+from os.path import isfile, join
 
 import cv2
 import matplotlib
@@ -98,6 +99,25 @@ def search_rgx(rgx, path):
             found_items.append(x)
 
     return found_items
+
+
+def get_from_module(py_module, bool_fcn):
+    """Check all objects of a python module and return all for which the
+    bool function returns true
+
+    Parameters
+    ----------
+    py_module : python module
+        import x -> pass x
+    bool_fcn : function that returns a boolean
+        y = fcn(x) -> x = object found in py_module, y in [True, False]
+
+    Returns
+    -------
+    list of tuples (name (str), object)
+    """
+    cls_members = inspect.getmembers(py_module, bool_fcn)
+    return cls_members
 
 
 def get_subfolders(base_folder):
