@@ -6,11 +6,10 @@ setup(
     packages=['DLBio'],
     url='https://github.com/pgruening/dlbio',
     install_requires=[
+        'numpy',
         'torch',
         'torchvision',
-        'numpy',
         'scikit-learn',
-        'tkinter',
         'matplotlib',
         'pandas',
         'opencv-python',
