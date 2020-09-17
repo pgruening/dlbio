@@ -4,5 +4,5 @@ setup(
     name='DLBio',
     version='0.0.1',
     packages=find_packages('src'),
-    url='https://github.com/pgruening/dlbio.git'
+    url='https://github.com/pgruening/dlbio'
 )
