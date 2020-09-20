@@ -3,10 +3,20 @@
 This Repository aims to provide boiler plate code to quickly train, test, and evaluate deep learning architectures in Pytorch.
 
 ## Install Guide
+There are two ways to install the package:
 ```
+# 1.) First clone the repo and then install it where it is located
 git clone https://github.com/pgruening/dlbio.git
 cd dlbio
 pip install -e .
+
+# 2.) Pip install directly from Github
+pip install git+https://github.com/pgruening/dlbio
+
+# Note, if you use docker, you may also need to run this:
+RUN pip install git+https://github.com/pgruening/dlbio
+RUN apt update
+RUN apt install libgl1-mesa-glx -y
 ```
 
 ## Interesting modules:
