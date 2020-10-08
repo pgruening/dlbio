@@ -67,6 +67,7 @@ class SegmentationDataset(Dataset):
 
         random.seed(seed)
         np.random.seed(seed)
+        torch.manual_seed(seed)
         x = self.data_aug(x)
         if self.image_aug is not None:
             x = self.image_aug(x)
@@ -79,6 +80,7 @@ class SegmentationDataset(Dataset):
         # y = (h,w)
         random.seed(seed)
         np.random.seed(seed)
+        torch.manual_seed(seed)
 
         y = self.data_aug(y)
 
