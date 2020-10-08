@@ -6,9 +6,6 @@ setup(
     packages=['DLBio'],
     url='https://github.com/pgruening/dlbio',
     install_requires=[
-        'numpy',
-        'torch',
-        'torchvision',
         'scikit-learn',
         'matplotlib',
         'pandas',
