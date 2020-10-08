@@ -96,3 +96,56 @@ class SegmentationDataset(Dataset):
 
     def __len__(self):
         return self.len
+
+# ----------------------------------------------------------------------------
+# -----------------------TESTING----------------------------------------------
+# ----------------------------------------------------------------------------
+
+
+def _test():
+    from torchvision import transforms
+    import copy
+    from tqdm import tqdm
+    # check if data augmentation (cropping, flipping) is done exactly the
+    # same in image and label
+
+    im_size = 1024
+    crop_size = 256
+
+    data_aug = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.RandomCrop(crop_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip()
+    ])
+
+    dataset = SegmentationDataset(ds_len=10, data_aug=data_aug)
+    dataset._ran_data_check = True
+
+    images = [
+        np.random.randint(
+            low=0, high=256, size=(im_size, im_size), dtype='uint8'
+        ) for _ in range(10)
+    ]
+    labels = copy.deepcopy(images)
+
+    dataset.images = images
+    dataset.labels = labels
+
+    to_tensor = transforms.ToTensor()
+    ctr = 0
+    for sample in tqdm(dataset):
+        x = sample['x']
+        y = sample['y']
+        y = to_tensor(y.numpy().astype('uint8'))
+
+        assert (torch.abs(x - y)).sum() <= 1e-9
+        ctr += 1
+        if ctr > len(dataset):
+            break
+
+    print('Test succeeded')
+
+
+if __name__ == '__main__':
+    _test()
