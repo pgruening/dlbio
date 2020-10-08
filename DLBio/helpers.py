@@ -11,7 +11,7 @@ import shutil
 import time
 import warnings
 from datetime import datetime
-from os.path import isfile, join
+from os.path import isfile, join, splitext
 
 import cv2
 import matplotlib
@@ -58,6 +58,70 @@ def load_json(file_path):
     with open(file_path, 'r') as file:
         out = json.load(file)
     return out
+
+
+def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
+    """Copies the source files of the current working dir to out_folder
+
+    Parameters
+    ----------
+    out_folder : str
+        where to copy the files
+    max_num_files : int, optional
+        makes sure not to copy files in endless loop, by default 100
+    do_not_copy_folders : list of str, optional
+        list of folder names that are not supposed to be copied, by default None
+    """
+    if do_not_copy_folders is None:
+        warnings.warn('No folders excluded from source_copy! Are you sure?')
+
+    out_f = out_folder.split('/')[-1]
+    out_folder = join(out_folder, 'src_copy')
+    print(f'Source copy to folder: {out_folder}')
+    ctr = 0
+    for root, _, files_ in os.walk('.'):
+
+        # remove the base folder:
+        # e.g. './models' or '.' -> grab anything behind that
+        current_folder = re.match(r'^(.$|.\/)(.*)', root).group(2)
+
+        # NOTE: only looks at the root folder, maybe adjustments are needed
+        # at some point
+        do_continue = False
+        for x in current_folder.split('/'):
+            if x in do_not_copy_folders:
+                do_continue = True
+                break
+        if do_continue:
+            continue
+
+        # do not copy anything that is on the path to the output folder (out_f)
+        if out_f in root.split('/'):
+            continue
+
+        # make sure there is no never-ending copy loop!!
+        if current_folder.split('/')[0] in ['src_copy']:
+            continue
+
+        files_ = [x for x in files_ if splitext(x)[-1] in ['.py']]
+        if not files_:
+            continue
+        else:
+            print(f'src_copy from folder: {root}')
+
+        for file in files_:
+            dst = file
+            if current_folder != '':
+                dst = join(current_folder, file)
+
+            dst = join(out_folder, dst)
+            src = join(root, file)
+
+            check_mkdir(dst)
+            shutil.copy(src, dst)
+
+            ctr += 1
+            assert ctr < max_num_files, 'too many files copied.'
 
 
 def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False):
