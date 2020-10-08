@@ -3,6 +3,16 @@ from setuptools import setup, find_packages
 setup(
     name='DLBio',
     version='0.0.1',
-    packages=find_packages('src'),
-    url='https://github.com/pgruening/dlbio.git'
+    packages=['DLBio'],
+    url='https://github.com/pgruening/dlbio',
+    install_requires=[
+        'numpy',
+        'torch',
+        'torchvision',
+        'scikit-learn',
+        'matplotlib',
+        'pandas',
+        'opencv-python',
+        'recordtype'
+      ]
 )
