@@ -54,7 +54,10 @@ class CellSegmentationModel(PytorchNeuralNetwork):
             input = image_batch_to_tensor(input).to(self.device)
 
         if self.normalization is not None:
-            input = self.normalization(input)
+            input = [
+                self.normalization(input[i, ...]) for i in range(input.shape[0])
+            ]
+            input = torch.stack(input, 0)
 
         with torch.no_grad():
             net_out = self.cnn(input)
