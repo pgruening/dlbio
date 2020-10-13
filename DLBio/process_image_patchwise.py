@@ -201,7 +201,7 @@ def patchwise_image_segmentation(network_output_fcn,
 
       Output Coordinates -> Integer frame. Corresponding to the output image.
 
-      Network Output Coordinages -> Integer frame. Correspondig to the network
+      Network Output Coordinates -> Integer frame. Corresponding to the network
       output patch.
 
       ######################################
@@ -455,3 +455,54 @@ def get_padded_image(original_image,
                                   )
 
     return padded_image
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+
+
+def _test_stitching():
+    import random
+    D = 1024
+
+    for _ in range(100):
+        # works if padding < in_shape
+        in_shape = [2 * random.randint(32, D // 2) for _ in range(3)]
+        out_shape = in_shape
+        model = FakeModel(in_shape, out_shape)
+        image = np.random.randint(low=0, high=255, size=(D, D, 3))
+
+        out = whole_image_segmentation(model, image, fast_prediction=True)
+
+        if ((out - image)**2.).sum() > 1e-9:
+            _, ax = plt.subplots(1, 3)
+            ax[0].imshow(image)
+            ax[1].imshow(out)
+            ax[2].imshow(image - out)
+            plt.savefig('debug.png')
+            plt.close()
+            assert ((out - image)**2.).sum() < 1e-9
+
+    print('Test succeeded')
+
+
+class FakeModel():
+    def __init__(self, in_shape, out_shape):
+        self.in_shape = in_shape
+        self.out_shape = out_shape
+
+    def get_input_shape(self):
+        return self.in_shape
+
+    def get_output_shape_for_patchwise_processing(self):
+        return self.out_shape
+
+    def get_num_classes(self):
+        return 3
+
+    def _predict(self, x, *args, **kwargs):
+        return x
+
+
+if __name__ == "__main__":
+    _test_stitching()
