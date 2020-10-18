@@ -74,6 +74,9 @@ def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
     """
     if do_not_copy_folders is None:
         warnings.warn('No folders excluded from source_copy! Are you sure?')
+        do_not_copy_folders = []
+
+    do_not_copy_folders += ['__pycache__']
 
     out_f = out_folder.split('/')[-1]
     out_folder = join(out_folder, 'src_copy')
@@ -100,7 +103,8 @@ def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
             continue
 
         # make sure there is no never-ending copy loop!!
-        if current_folder.split('/')[0] in ['src_copy']:
+        tmp = [1 for x in current_folder.split('/') if x in ['src_copy']]
+        if tmp:
             continue
 
         files_ = [x for x in files_ if splitext(x)[-1] in ['.py']]
