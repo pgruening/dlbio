@@ -10,6 +10,7 @@ import re
 import shutil
 import time
 import warnings
+from collections import namedtuple
 from datetime import datetime
 from os.path import isfile, join, splitext
 
@@ -195,6 +196,24 @@ def get_subfolders(base_folder):
 
 def get_parent_folder(folder):
     return '/'.join(folder.split('/')[:-1])
+
+
+def dict_to_options(opt_dict):
+    """Transforms a dictionary into an options object,
+    similar to the object created by the ArgumentParser. 
+
+    Parameters
+    ----------
+    opt_dict : dict
+
+    Returns
+    -------
+    object
+        "key: value" -> object.key == value
+    """
+    Options = namedtuple('Options', opt_dict.keys())
+
+    return Options(**opt_dict)
 
 
 class MyDataFrame():
