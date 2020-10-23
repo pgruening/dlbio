@@ -1,8 +1,11 @@
 import json
+from collections import OrderedDict
 
 import numpy as np
 import torch
 from recordtype import recordtype
+
+from .helpers import dict_to_options, load_json
 
 
 def get_device():
@@ -37,7 +40,7 @@ def cuda_to_numpy(x):
     elif x.dim() == 3:
         return x.permute([1, 2, 0]).numpy()
     else:
-        raise ValueError('Unkwnown dimensionality: {}'.format(x.dim()))
+        raise ValueError('Unknown dimensionality: {}'.format(x.dim()))
 
 
 def image_batch_to_tensor(x):
@@ -60,3 +63,48 @@ def check_norm(model):
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+
+
+def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False):
+    """Load a model with pt-file located at model_path and and options file
+    located at options_path, using get_model_fcn.
+
+    In your specific repo, you should create a 'load_model' function, that
+    implements the specific get_model_fcn and uses this function to handle
+    the pytorch part. 
+
+    Parameters
+    ----------
+    model_path : str
+        path to a pytorch model-file: [name].pt, if is None, the model
+        is only loaded from scratch
+    options : str / or object
+        path to a json file that contains an options dictionary, or the options
+        object itself
+    get_model_fcn : function(NamedTuple, str)
+        functions that, given an options object and a device loads a model
+        (from scratch)
+    device : str
+        Defines whether a cpu ('cpu') or gpu ('cuda:0') is used.
+
+    Returns
+    -------
+    nn.Module
+        a pytorch model with the weights taken from model_path
+    """
+
+    if isinstance(options, str):
+        options = load_json(options)
+        options = dict_to_options(options)
+
+    model = get_model_fcn(options, device)
+
+    if model_path is None:
+        return model
+
+    model_sd = torch.load(model_path)
+    if not isinstance(model_sd, OrderedDict):
+        model_sd = model_sd.state_dict()
+    model.load_state_dict(model_sd, strict=strict)
+
+    return model
