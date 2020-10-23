@@ -517,7 +517,11 @@ def set_device(device=None):
         visible
     """
     if device is not None:
-        os.environ['CUDA_VISIBLE_DEVICES'] = str(device)
+        if isinstance(device, list):
+            device = ','.join([str(x) for x in device])
+        else:
+            device = str(device)
+        os.environ['CUDA_VISIBLE_DEVICES'] = device
         print(f'using device {device}')
 
 
