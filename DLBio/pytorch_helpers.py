@@ -65,7 +65,7 @@ def get_lr(optimizer):
         return param_group['lr']
 
 
-def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False):
+def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False, map_location=None):
     """Load a model with pt-file located at model_path and and options file
     located at options_path, using get_model_fcn.
 
@@ -102,7 +102,11 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False
     if model_path is None:
         return model
 
-    model_sd = torch.load(model_path)
+    if map_location is not None:
+        model_sd = torch.load(model_path, map_location=map_location)
+    else:
+        model_sd = torch.load(model_path)
+
     if not isinstance(model_sd, OrderedDict):
         model_sd = model_sd.state_dict()
     model.load_state_dict(model_sd, strict=strict)
