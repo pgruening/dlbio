@@ -65,7 +65,7 @@ def get_lr(optimizer):
         return param_group['lr']
 
 
-def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False, map_location=None):
+def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False, map_location=None, from_par_gpu=False):
     """Load a model with pt-file located at model_path and and options file
     located at options_path, using get_model_fcn.
 
@@ -109,6 +109,16 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False
 
     if not isinstance(model_sd, OrderedDict):
         model_sd = model_sd.state_dict()
+        if from_par_gpu:
+            raise NotImplementedError('TODO...')
+    else:
+        if from_par_gpu:
+            new_dict = OrderedDict()
+            for key, value in model_sd.items():
+                new_key = key.replace('module.', '')
+                new_dict[new_key] = value
+            model_sd = new_dict
+
     model.load_state_dict(model_sd, strict=strict)
 
     return model
