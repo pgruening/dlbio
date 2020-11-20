@@ -249,6 +249,7 @@ class Training():
 
         do_stop = False
 
+        print('STARTING TRAINING')
         for epoch in range(epochs_):
             self.printer.learning_rate = get_lr(self.optimizer)
 
