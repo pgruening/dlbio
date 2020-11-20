@@ -1,23 +1,59 @@
+import time
 import warnings
 
 import torch
+import torch.multiprocessing as mp
 
-from DLBio.pytorch_helpers import get_lr
 from DLBio.pt_train_printer import Printer
-import multiprocessing
+from DLBio.pytorch_helpers import get_lr
 
 
 class InterfaceProcess():
-    def __init__(self, train_interface):
+    def __init__(self, train_interface, answer_qu):
         self.ti = train_interface
-        self.ask_qu = multiprocessing.Queue()
-        self.answer_qu = multiprocessing.Queue()
+        self.ask_qu = mp.Queue()
+        self.answer_qu = answer_qu
 
     def run(self):
         while True:
-            if not self.ask_qu.empty():
-                current_phase, sample = self.ask_qu.get()
-                _iteration_step(self.ti, sample, current_phase)
+            time.sleep(2)
+            if self.ask_qu.empty():
+                continue
+
+            tmp = self.ask_qu.get()
+            cmd = tmp[0]
+            print(f'found command {cmd}')
+            if cmd == 'step':
+                current_phase, sample, epoch = tmp[1], tmp[2], tmp[3]
+                loss, metrics, counters, functions = _iteration_step(
+                    self.ti, sample, current_phase)
+
+                _update_printer(
+                    self.ti, epoch, loss, metrics,
+                    counters, functions, current_phase
+                )
+
+                if current_phase == 'train':
+                    _update_weights(self.ti, loss)
+
+                print('step done')
+                self.answer_qu.put('step done')
+
+            elif cmd == 'epoch_end':
+                self.ti.printer.on_epoch_end()
+                _schedule(self.ti, current_phase)
+
+            elif cmd == 'set_printer_lr':
+                self.ti.printer.learning_rate = get_lr(self.ti.optimizer)
+
+            elif cmd == 'restart_printer':
+                self.ti.printer.restart()
+
+            elif cmd == 'set_models_to_train':
+                self.ti.model.train()
+
+            elif cmd == 'set_eval_model_in_models':
+                self.ti.model.eval()
 
 
 class IMultiModelTrainingInterface():
@@ -79,7 +115,10 @@ class IMultiModelTrainingInterface():
 class MultiModelTraining():
     def __init__(self, data_loader, train_interfaces, device, val_data_loader=None, test_data_loader=None, validation_only=False):
         self.data_loader = data_loader
-        self.train_interfaces = train_interfaces
+        self.qu = mp.Queue()
+        self.train_interfaces = [
+            InterfaceProcess(x, self.qu) for x in train_interfaces
+        ]
 
         self.phases = ['train']
         if val_data_loader is not None:
@@ -104,6 +143,19 @@ class MultiModelTraining():
             warnings.warn('No GPU detected. Training can be slow.')
 
     def __call__(self, epochs_):
+        try:
+            processes = []
+            for ti in self.train_interfaces:
+                tmp = mp.Process(target=ti.run)
+                tmp.start()
+                processes.append(tmp)
+
+            self.__run(epochs_)
+        except:
+            for tmp in processes():
+                tmp.terminate()
+
+    def __run(self, epochs_):
 
         self._restart_printer()
 
@@ -121,53 +173,40 @@ class MultiModelTraining():
                 for sample in self.data_loaders_[current_phase]:
                     sample = [x.to(self.d) for x in sample]
                     for ti in self.train_interfaces:
-                        loss, metrics, counters, functions = _iteration_step(
-                            ti, sample, current_phase)
+                        ti.ask_qu.put(['step', current_phase, sample, epoch])
+                        # check for train interfaces that can be removed
 
-                        _update_printer(
-                            ti, epoch, loss, metrics,
-                            counters, functions, current_phase
-                        )
+                    is_done_ctr = 0
+                    while is_done_ctr < len(self.train_interfaces):
+                        if not self.qu.empty():
+                            tmp = self.qu.get()
+                            if tmp == 'step done':
+                                is_done_ctr += 1
+                        print(is_done_ctr)
+                        time.sleep(2.)
 
-                        if current_phase == 'train':
-                            _update_weights(ti, loss)
-
-                # check for train interfaces that can be removed
-                to_pop_tis = []
-                for index, ti in enumerate(self.train_interfaces):
-                    do_stop = False
-                    if ti.early_stopping is not None and current_phase == 'validation':
-                        do_stop = ti.early_stopping(
-                            ti.printer.get_metrics(),
-                            ti.train_interface.model,
-                            ti.save_path,
-                            ti.save_state_dict
-                        )
-
-                    if do_stop:
-                        to_pop_tis.append(index)
-
-                    ti.printer.on_epoch_end()
-                    _schedule(ti, current_phase)
-
-                for i in to_pop_tis:
-                    self.train_interfaces.pop(i)
+                for ti in self.train_interfaces:
+                    ti.ask_qu.put(['on_epoch_end'])
 
     def _set_printer_lr(self):
         for ti in self.train_interfaces:
-            ti.printer.learning_rate = get_lr(ti.optimizer)
+            # ti.printer.learning_rate = get_lr(ti.optimizer)
+            ti.ask_qu.put(['set_printer_lr'])
 
     def _restart_printer(self):
         for ti in self.train_interfaces:
-            ti.printer.restart()
+            ti.ask_qu.put(['restart_printer'])
+#            ti.printer.restart()
 
     def _set_models_to_train(self):
         for ti in self.train_interfaces:
-            ti.model.train()
+            ti.ask_qu.put(['set_models_to_train'])
+#          ti.model.train()
 
     def _set_eval_model_in_models(self):
         for ti in self.train_interfaces:
-            ti.model.eval()
+            ti.ask_qu.put(['set_eval_model_in_models'])
+ #           ti.model.eval()
 
 
 def _iteration_step(train_interface, sample, current_phase):
