@@ -38,7 +38,10 @@ def check_mkdir(directory_or_file, is_dir=False):
 
 
 def save_options(file_path, options):
-    out_dict = options.__dict__
+    if not hasattr(options, "__dict__"):
+        out_dict = dict(options._asdict())
+    else:
+        out_dict = options.__dict__
 
     # add the current time to the output
     now = datetime.now()
