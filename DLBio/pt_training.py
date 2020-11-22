@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 import warnings
+from math import cos, pi
 
 import cv2
 import numpy as np
@@ -141,7 +142,7 @@ class Training():
             printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None,
             validation_only=False, save_state_dict=False,
-            test_data_loader=None
+            test_data_loader=None, batch_scheduler=None
     ):
         """Constructor
 
@@ -186,6 +187,8 @@ class Training():
             value of this metric is reached. By default None, no early stopping
         validation_only: when called, only the validation steps are computed
         save_state_dict: save the model's state dict instead of the model
+        batch_scheduler: for scheduling algorithms that adjust the learning
+            rate within an epoch, instead each epoch's end.
         Returns
         -------
         Training object
@@ -197,6 +200,7 @@ class Training():
         self.train_interface = train_interface
 
         self.scheduler = scheduler
+        self.batch_scheduler = batch_scheduler
         self.early_stopping = early_stopping
 
         if printer is None:
@@ -224,6 +228,7 @@ class Training():
         if test_data_loader is not None:
             self.phases.append('test')
 
+        self.validation_only = validation_only
         if validation_only:
             self.phases = ['validation']
             print('Running in validation only mode.')
@@ -249,6 +254,11 @@ class Training():
 
         do_stop = False
 
+        if self.validation_only:
+            num_batches = 0
+        else:
+            num_batches = len(self.data_loaders_['train'])
+
         print('STARTING TRAINING')
         for epoch in range(epochs_):
             self.printer.learning_rate = get_lr(self.optimizer)
@@ -259,7 +269,11 @@ class Training():
                 else:
                     self.train_interface.model.eval()
 
-                for sample in self.data_loaders_[current_phase]:
+                for idx, sample in enumerate(self.data_loaders_[current_phase]):
+
+                    self._batch_schedule(
+                        current_phase, epoch, idx, num_batches
+                    )
 
                     loss, metrics, counters, functions = self._iteration_step(
                         sample, current_phase)
@@ -382,6 +396,13 @@ class Training():
         if self.scheduler is not None:
             if current_phase == 'train':
                 self.scheduler.step()
+
+    def _batch_schedule(self, current_phase, epoch, iteration, num_batches):
+        """update the scheduler after each batch
+        """
+        if self.batch_scheduler is not None:
+            if current_phase == 'train':
+                self.batch_scheduler.step(epoch, iteration, num_batches)
 
     def _save(self, epoch, epochs_):
         """save the model to model path every 'save_steps' epochs.
@@ -673,3 +694,41 @@ class EarlyStopping():
 
 def get_printer(print_intervall, log_file=None):
     return Printer(print_intervall, log_file=log_file)
+
+
+# taken from https://github.com/d-li14/mobilenetv2.pytorch/blob/master/imagenet.py
+
+class BatchScheduler():
+    def __init__(self, decay_type, optimizer, initial_learning_rate, warmup, num_epochs, gamma=.1):
+        self.optimizer = optimizer
+        self.lr = initial_learning_rate
+        self.warmup = warmup
+        self.num_epochs = num_epochs
+        self.decay_type = decay_type
+        self.gamma = gamma
+
+    def step(self, epoch, iteration, num_iter):
+        lr = self.optimizer.param_groups[0]['lr']
+
+        warmup_epoch = 5 if self.warmup else 0
+        warmup_iter = warmup_epoch * num_iter
+        current_iter = iteration + epoch * num_iter
+        max_iter = self.num_epochs * num_iter
+
+        if self.decay_type == 'step':
+            lr = self.lr * \
+                (self.gamma ** ((current_iter - warmup_iter) // (max_iter - warmup_iter)))
+        elif self.decay_type == 'cos':
+            lr = self.lr * \
+                (1 + cos(pi * (current_iter - warmup_iter) / (max_iter - warmup_iter))) / 2
+        elif self.decay_type == 'linear':
+            lr = self.lr * (1 - (current_iter - warmup_iter) /
+                            (max_iter - warmup_iter))
+        else:
+            raise ValueError('Unknown lr mode {}'.format(self.decay_type))
+
+        if epoch < warmup_epoch:
+            lr = self.lr * current_iter / warmup_iter
+
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
