@@ -14,12 +14,13 @@ class IPrinterFcn():
 
 
 class Printer(object):
-    def __init__(self, print_intervall, log_file=None, dont_print_list=None):
+    def __init__(self, print_intervall, log_file=None, dont_print_list=None, resume=False):
         self.print_intervall = print_intervall
         self.log_file = log_file
         self.dont_print = dont_print_list
 
-        if self.log_file is not None:
+        # overwrite old log file
+        if self.log_file is not None and not resume:
             with open(self.log_file, 'w') as file:
                 output_dict = dict()
                 json.dump(output_dict, file)
