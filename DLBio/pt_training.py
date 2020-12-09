@@ -142,7 +142,7 @@ class Training():
             printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None,
             validation_only=False, save_state_dict=False,
-            test_data_loader=None, batch_scheduler=None
+            test_data_loader=None, batch_scheduler=None, start_epoch=0
     ):
         """Constructor
 
@@ -189,6 +189,7 @@ class Training():
         save_state_dict: save the model's state dict instead of the model
         batch_scheduler: for scheduling algorithms that adjust the learning
             rate within an epoch, instead each epoch's end.
+        start_epoch: set to a value other than 0 if training is resumed
         Returns
         -------
         Training object
@@ -239,6 +240,8 @@ class Training():
             'test': test_data_loader
         }
 
+        self.start_ep = start_epoch
+
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
 
@@ -260,7 +263,7 @@ class Training():
             num_batches = len(self.data_loaders_['train'])
 
         print('STARTING TRAINING')
-        for epoch in range(epochs_):
+        for epoch in range(self.start_ep, epochs_):
             self.printer.learning_rate = get_lr(self.optimizer)
 
             for current_phase in self.phases:
