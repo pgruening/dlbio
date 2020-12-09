@@ -185,11 +185,16 @@ class Training():
         early_stopping : EarlyStopping object, optional
             save the model based on a specified metric, each time the best 
             value of this metric is reached. By default None, no early stopping
-        validation_only: when called, only the validation steps are computed
+        validation_only: bool 
+            when called, only the validation steps are computed
         save_state_dict: save the model's state dict instead of the model
-        batch_scheduler: for scheduling algorithms that adjust the learning
+        batch_scheduler: BatchScheduler object
+            for scheduling algorithms that adjust the learning
             rate within an epoch, instead each epoch's end.
-        start_epoch: set to a value other than 0 if training is resumed
+        start_epoch: int 
+            set to a value other than 0 if training is resumed
+        
+
         Returns
         -------
         Training object
