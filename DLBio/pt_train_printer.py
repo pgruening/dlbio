@@ -1,5 +1,6 @@
 import json
 import time
+from os.path import isfile
 
 
 class IPrinterFcn():
@@ -20,7 +21,8 @@ class Printer(object):
         self.dont_print = dont_print_list
 
         # overwrite old log file
-        if self.log_file is not None and not resume:
+        if self.log_file is not None and not resume or not isfile(self.log_file):
+            print(f'writing new log-file: {self.log_file}')
             with open(self.log_file, 'w') as file:
                 output_dict = dict()
                 json.dump(output_dict, file)
@@ -29,7 +31,9 @@ class Printer(object):
         self.restart()
 
     def on_epoch_end(self):
-        self.print()
+        if self.print_intervall != -1:
+            self.print()
+
         if self.log_file is not None:
             self.write_to_log()
         self.restart()
@@ -77,6 +81,8 @@ class Printer(object):
             self.functions = functions
 
     def print_conditional(self):
+        if self.print_intervall == -1:
+            return
         if self.counter % self.print_intervall == 0:
             self.print()
 
