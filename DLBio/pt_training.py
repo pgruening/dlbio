@@ -254,6 +254,8 @@ class Training():
 
         if start_epoch > 0:
             self.start_ep = start_epoch + 1
+        else:
+            self.start_ep = 0
 
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
