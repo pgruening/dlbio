@@ -1,6 +1,7 @@
 import argparse
 import os
 import random
+import time
 import warnings
 from math import cos, pi
 
@@ -142,7 +143,8 @@ class Training():
             printer=None, scheduler=None, clip=None,
             retain_graph=False, val_data_loader=None, early_stopping=None,
             validation_only=False, save_state_dict=False,
-            test_data_loader=None, batch_scheduler=None, start_epoch=0
+            test_data_loader=None, batch_scheduler=None, start_epoch=0,
+            time_log_printer=None
     ):
         """Constructor
 
@@ -193,7 +195,9 @@ class Training():
             rate within an epoch, instead each epoch's end.
         start_epoch: int 
             set to a value other than 0 if training is resumed
-        
+        time_log_printer: Printer (pt_train_printer)
+            if not none, several the time needed for different training steps
+            is logged and written by this logger
 
         Returns
         -------
@@ -213,6 +217,9 @@ class Training():
             self.printer = Printer(100, None)
         else:
             self.printer = printer
+
+        self.time_log_printer = time_log_printer
+        self.time_logger = TimeLogger(is_active=(time_log_printer is not None))
 
         assert isinstance(save_steps, int)
         if save_steps > 0:
@@ -245,7 +252,7 @@ class Training():
             'test': test_data_loader
         }
 
-        self.start_ep = start_epoch
+        self.start_ep = start_epoch + 1
 
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
@@ -267,6 +274,16 @@ class Training():
         else:
             num_batches = len(self.data_loaders_['train'])
 
+        # TODO: if resume, compute the learning rate beforehand
+        if self.start_ep > 0:
+            if self.batch_scheduler is not None:
+                self._batch_schedule(
+                    'train', self.start_ep, 0,
+                    self.data_loaders_['train'].batch_size
+                )
+            if self.scheduler is not None:
+                raise NotImplementedError
+
         print('STARTING TRAINING')
         for epoch in range(self.start_ep, epochs_):
             self.printer.learning_rate = get_lr(self.optimizer)
@@ -277,7 +294,9 @@ class Training():
                 else:
                     self.train_interface.model.eval()
 
+                self.time_logger.start(current_phase + '_load_data')
                 for idx, sample in enumerate(self.data_loaders_[current_phase]):
+                    self.time_logger.stop(current_phase + '_load_data')
 
                     self._batch_schedule(
                         current_phase, epoch, idx, num_batches
@@ -292,6 +311,14 @@ class Training():
                     if current_phase == 'train':
                         self._update_weights(loss)
 
+                    self.time_logger.start(current_phase + '_load_data')
+                    # ----------- end of phase ----------------------------
+
+                self.time_logger.stop(
+                    current_phase + '_load_data', do_log=False
+                )
+
+                # do certain actions depending on which phase we are in
                 if self.early_stopping is not None and current_phase == 'validation':
                     do_stop = self.early_stopping(
                         self.printer.get_metrics(),
@@ -302,10 +329,20 @@ class Training():
                 self.printer.on_epoch_end()
 
                 self._schedule(current_phase)
-                self._save(epoch, epochs_)
+                self._save(epoch, epochs_, current_phase)
+
+                # compute statistics on time values that are collected during
+                # the upper for-loop
+                if self.time_log_printer is not None:
+                    self.time_log_printer.update(
+                        torch.tensor([-1]), epoch, metrics=self.time_logger.get_data()
+                    )
+                    self.time_log_printer.on_epoch_end()
+                    self.time_logger.restart()
 
             if do_stop:
                 return
+            # -------------------end of epoch -------------------------------
 
     def _iteration_step(self, sample, current_phase):
         """Compute loss and metrics
@@ -323,6 +360,7 @@ class Training():
             loss value that is used for gradient computation and a dictionary
             with metrics.
         """
+        self.time_logger.start(current_phase + '_iteration_step')
         if current_phase == 'validation':
             with torch.no_grad():
                 #loss, metrics, counters = self.train_interface.val_step(sample)
@@ -345,6 +383,7 @@ class Training():
             loss, metrics, counters = output[0], output[1], output[2]
             functions = output[3]
 
+        self.time_logger.stop(current_phase + '_iteration_step')
         return loss, metrics, counters, functions
 
     def _update_weights(self, loss):
@@ -355,15 +394,24 @@ class Training():
         loss : float
             error function the weight update is based on
         """
+        self.time_logger.start('update_weights')
+
         self.optimizer.zero_grad()
+
+        self.time_logger.start('loss_backward')
         loss.backward(retain_graph=self.retain_graph)
+        self.time_logger.stop('loss_backward')
 
         if self.clip is not None:
             torch.nn.utils.clip_grad_norm_(
                 self.train_interface.model.parameters(), self.clip
             )
 
+        self.time_logger.start('opt_step')
         self.optimizer.step()
+        self.time_logger.stop('opt_step')
+
+        self.time_logger.stop('update_weights')
 
     def _update_printer(self, epoch, loss, metrics, counters, functions, current_phase):
         """Pass the necessary values to the printer
@@ -380,6 +428,7 @@ class Training():
             to val_[name]
 
         """
+        self.time_logger.start(current_phase + '_update_printer')
         if current_phase == 'train':
             self.printer.update(loss, epoch, metrics, counters, functions)
         else:
@@ -395,6 +444,7 @@ class Training():
                 loss, epoch, metrics,
                 counters, functions, loss_key=prefix + 'loss'
             )
+        self.time_logger.stop(current_phase + '_update_printer')
 
         self.printer.print_conditional()
 
@@ -403,16 +453,20 @@ class Training():
         """
         if self.scheduler is not None:
             if current_phase == 'train':
+                self.time_logger.start('schedule')
                 self.scheduler.step()
+                self.time_logger.stop('schedule')
 
     def _batch_schedule(self, current_phase, epoch, iteration, num_batches):
         """update the scheduler after each batch
         """
         if self.batch_scheduler is not None:
             if current_phase == 'train':
+                self.time_logger.start('batch_schedule')
                 self.batch_scheduler.step(epoch, iteration, num_batches)
+                self.time_logger.stop('batch_schedule')
 
-    def _save(self, epoch, epochs_):
+    def _save(self, epoch, epochs_, current_phase):
         """save the model to model path every 'save_steps' epochs.
 
         Parameters
@@ -421,7 +475,16 @@ class Training():
             current epoch
         epochs_ : int
             number of epochs for entire training
+        current_phase: str
+            is this function called after training, val or testing? Only after
+            validation, the model is saved.
         """
+
+        # only save after validation
+        if current_phase != 'validation':
+            return
+
+        self.time_logger.start('save')
         if self.do_save:
             if epoch == epochs_ - 1 or epoch % self.save_steps == 0:
                 print(f'Saving {self.save_path}')
@@ -435,6 +498,8 @@ class Training():
                     )
                 else:
                     torch.save(self.train_interface.model, self.save_path)
+        self.time_logger.stop('save')
+        print('logged save value')
 
 
 def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
@@ -740,3 +805,56 @@ class BatchScheduler():
 
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr
+
+
+class TimeLogger():
+    def __init__(self, is_active):
+        self.is_active = is_active
+        self.data = dict()
+        self.qu = dict()
+        self.functions = {
+            'mean': np.mean,
+            'min': np.min,
+            'max': np.max,
+            'std': np.std,
+            'median': np.median,
+            'sum': np.sum
+        }
+
+    def restart(self):
+        if not self.is_active:
+            return
+        self.data = dict()
+
+    def start(self, key):
+        if not self.is_active:
+            return
+        assert key not in self.qu.keys()
+        self.qu[key] = time.time()
+
+    def stop(self, key, do_log=True):
+        if not self.is_active:
+            return
+        start_time = self.qu.pop(key)
+        time_needed = time.time() - start_time
+        if do_log:
+            self._update(key, time_needed)
+
+    def _update(self, key, value):
+        assert self.is_active
+        if key not in self.data.keys():
+            self.data[key] = [value]
+        else:
+            self.data[key].append(value)
+
+    def get_data(self):
+        assert self.is_active
+
+        out = dict()
+        for key, values in self.data.items():
+            values = np.array(values)
+            for name, fcn in self.functions.items():
+                tmp = float(fcn(values))
+                out[key + '_' + name] = tmp
+
+        return out
