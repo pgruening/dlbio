@@ -484,7 +484,7 @@ class Training():
         """
 
         # only save after validation
-        if current_phase != 'validation':
+        if current_phase != 'validation' and 'validation' in self.phases:
             return
 
         self.time_logger.start('save')
