@@ -8,6 +8,74 @@ from recordtype import recordtype
 from .helpers import dict_to_options, load_json
 
 
+class GetBlocks():
+    """
+    use like this:
+    get_blocks = GetBlocks()
+    found_blocks = get_blocks(model, (module1, module2, module3))
+
+    Don't forget to reset the counter if you want to reuse the function
+    """
+
+    def __init__(self):
+        self.ctr = 0
+
+    def __call__(self, module, used_blocks):
+        """Returns all object that are of a type given in used_blocks and
+        contained in module (e.g. a CNN model).
+
+        Parameters
+        ----------
+        module : nn.Module
+            a module containing other modules
+        used_blocks : tuple of classes (typically nn.Module)
+            what classes to look for
+
+        Returns
+        -------
+        list of tuples: (int, object)
+            int = depth (number of convolution before the module)
+            object = the actual module with type in used_blocks
+        """
+        assert isinstance(used_blocks, tuple)
+        out = []
+        if isinstance(module, used_blocks):
+            self.ctr += 1
+            out.append([self.ctr, module])
+        else:
+            if isinstance(module, nn.Conv2d):
+                self.ctr += 1
+
+            for child in module.children():
+                out += self(child, used_blocks)
+
+        return out
+
+
+class ActivationGetter():
+    """use like this
+    get_conv_activation = ActivationGetter(model.conv1)
+    y = model(x)
+    conv_activation = get_conv_activation.out
+    """
+
+    def __init__(self, module):
+        """A way to save the outputs of specific modules in a bigger model,
+        e.g., if you want to check outputs of specific layers.
+
+        Parameters
+        ----------
+        module : nn.Module
+            the forward output of the module is written in the variable "out"
+            after using the forward pass.
+        """
+        self.hook = module.register_forward_hook(self._hook_fcn)
+        self.out = None
+
+    def _hook_fcn(self, module, input, output):
+        self.out = output
+
+
 def get_device():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     return device
