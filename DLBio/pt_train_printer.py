@@ -92,17 +92,29 @@ class Printer(object):
     def get_out_str(self):
         out_str = f'Ep: {self.epoch}, {self.loss_key}: {self.loss/self.counter:.5f}'
         for key, val in self.metrics.items():
-            out_str += f' {key}: {val/self.counter:.3f}'
+            if self.do_print(key):
+                out_str += f' {key}: {val/self.counter:.3f}'
         for key, val in self.counters.items():
-            out_str += f' {key}: {val:.3f}'
+            if self.do_print(key):
+                out_str += f' {key}: {val:.3f}'
 
         if self.functions is not None:
             for key, fcn in self.functions.items():
-                out_str += f' {key}: {fcn():.3f}'
+                if self.do_print(key):
+                    out_str += f' {key}: {fcn():.3f}'
 
         out_str += f' lr: {self.learning_rate:.5f}'
         out_str += f' sec: {self.time_needed:.2f}'
         return out_str
+
+    def do_print(self, key):
+        if self.dont_print is None:
+            return True
+
+        if 'val_' in key:
+            key = key.split('val_')[1]
+
+        return key not in self.dont_print
 
     def write_to_log(self):
         # NOTE: pt_tensor values cannot be written to a json file
