@@ -222,10 +222,10 @@ class Training():
         self.time_logger = TimeLogger(is_active=(time_log_printer is not None))
 
         assert isinstance(save_steps, int)
-        if save_steps > 0:
+        if save_steps >= 0:
             assert save_path is not None
 
-        self.do_save = save_steps > 0 and save_path is not None
+        self.do_save = save_steps >= 0 and save_path is not None
         self.save_steps = save_steps
         self.save_path = save_path
         self.save_state_dict = save_state_dict
@@ -489,7 +489,13 @@ class Training():
 
         self.time_logger.start('save')
         if self.do_save:
-            if epoch == epochs_ - 1 or epoch % self.save_steps == 0:
+            is_last_epoch = (epoch == epochs_ - 1)
+            if self.save_steps > 0:
+                is_save_intervall = epoch % self.save_steps == 0
+            else:
+                is_save_intervall = False
+
+            if is_last_epoch or is_save_intervall:
                 print(f'Saving {self.save_path}')
                 if self.save_state_dict:
                     print('save as state dict')
@@ -502,7 +508,7 @@ class Training():
                 else:
                     torch.save(self.train_interface.model, self.save_path)
         self.time_logger.stop('save')
-        print('logged save value')
+        print('saving done')
 
 
 def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
