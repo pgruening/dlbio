@@ -38,6 +38,9 @@ def check_mkdir(directory_or_file, is_dir=False):
 
 
 def save_options(file_path, options):
+    warnings.warn(
+        'helpers.save_options is deprecated and has been moved to pytorch_helpers'
+    )
     if not hasattr(options, "__dict__"):
         out_dict = dict(options._asdict())
     else:

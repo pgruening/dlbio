@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -79,6 +80,28 @@ class ActivationGetter():
 def get_device():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     return device
+
+
+def save_options(file_path, options):
+    if not hasattr(options, "__dict__"):
+        out_dict = dict(options._asdict())
+    else:
+        out_dict = options.__dict__
+
+    # add the current time to the output
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y-%H:%M:%S")
+
+    out_dict.update({
+        'start_time': dt_string
+    })
+
+    # add the used pytorch version, with it, it is easier to identity
+    # problems when loading a model
+    out_dict['torch_version'] = torch.__version__
+
+    with open(file_path, 'w') as file:
+        json.dump(out_dict, file)
 
 
 def get_num_params(model, count_only_trainable=True):
