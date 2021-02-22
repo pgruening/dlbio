@@ -1,12 +1,44 @@
 import json
+import subprocess
 from collections import OrderedDict
 from datetime import datetime
+from io import BytesIO
 
 import numpy as np
+import pandas as pd
 import torch
 from recordtype import recordtype
 
 from .helpers import dict_to_options, load_json
+
+
+def get_free_gpus(thres=1024):
+    """Returns a list of gpu-indices, where the memory allocation does not 
+    exceed thres.
+
+    Parameters
+    ----------
+    thres : int, optional
+        number of MiB. If this number is exceeded the gpu is considere 
+        'not-free' , by default 1024
+
+    Returns
+    -------
+    list of int
+        indices of GPU that are free to use
+    """
+    gpu_stats = subprocess.check_output(
+        ["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"])
+    gpu_df = pd.read_csv(BytesIO(gpu_stats),
+                         names=['memory.used', 'memory.free'],
+                         skiprows=1)
+    gpu_df['memory.used'] = gpu_df['memory.used'].map(
+        lambda x: int(x.rstrip(' [MiB]')))
+
+    free_gpu_indices = [
+        i for i, x in enumerate(list(gpu_df['memory.used'])) if x < thres
+    ]
+    return free_gpu_indices
 
 
 class GetBlocks():

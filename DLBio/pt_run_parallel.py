@@ -2,6 +2,7 @@ import random
 import subprocess
 import time
 from multiprocessing import Process
+from .pytorch_helpers import get_free_gpus
 
 NUM_TRIES = 1
 AVAILABLE_GPUS = [0, 1, 2, 3]
@@ -18,14 +19,13 @@ def run(param_generator, make_object,
     ----------
     param_generator : generator of dictionaries
         generates dictionaries with parameters for the process
-    make_object : function 
+    make_object : function
         function that returns a class object which is a training process
         process should implement __call__, set_timer and have a __name__ and
         start_time property.
     """
     train_processes_ = []
-
-    current_available_gpus = available_gpus
+    current_available_gpus = check_for_free_gpus(available_gpus, verbose=True)
 
     for kwargs in param_generator:
         for try_num in range(num_tries):
@@ -64,6 +64,19 @@ def run(param_generator, make_object,
                 print(f'process {train_process.__name__} is done.')
                 print(f'minutes needed: {minutes_needed}')
                 print(f'available gpus: {current_available_gpus}')
+
+                current_available_gpus = check_for_free_gpus(available_gpus)
+
+
+def check_for_free_gpus(available_gpus, verbose=False):
+    free_gpus = get_free_gpus()
+    current_available_gpus = list(
+        set(available_gpus).intersection(set(free_gpus))
+    )
+    if verbose:
+        print(f'Available GPUs: {current_available_gpus}')
+
+    return current_available_gpus
 
 
 class MakeObject():
