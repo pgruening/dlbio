@@ -487,8 +487,8 @@ class Training():
         if current_phase != 'validation' and 'validation' in self.phases:
             return
 
-        self.time_logger.start('save')
         if self.do_save:
+            self.time_logger.start('save')
             is_last_epoch = (epoch == epochs_ - 1)
             if self.save_steps > 0:
                 is_save_intervall = epoch % self.save_steps == 0
@@ -507,8 +507,8 @@ class Training():
                     )
                 else:
                     torch.save(self.train_interface.model, self.save_path)
-        self.time_logger.stop('save')
-        print('saving done')
+            self.time_logger.stop('save')
+            print('saving done')
 
 
 def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
