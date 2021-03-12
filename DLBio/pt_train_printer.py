@@ -114,6 +114,9 @@ class Printer(object):
         if 'val_' in key:
             key = key.split('val_')[1]
 
+        if 'test_' in key:
+            key = key.split('test_')[1]
+
         return key not in self.dont_print
 
     def write_to_log(self):
