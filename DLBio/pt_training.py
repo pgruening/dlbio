@@ -17,7 +17,7 @@ from DLBio.pytorch_helpers import get_lr
 
 class ITrainInterface():
     """
-    Train Interface handle the prediction of the network, the loss 
+    TrainInterfaces handle the prediction of the network, the loss 
     computation and the computation of additional training metrics.
     These steps can quickly change depending on the dataset, the model
     architecture, the task and so on. Therefore, it is reasonable to
@@ -25,7 +25,7 @@ class ITrainInterface():
 
     You need to implement the constructor and the train_step method,
     if the computations in the validation step differ from the train_step
-    you need to overwrite val_step
+    you need to overwrite val_step.
 
     """
 
@@ -70,11 +70,10 @@ class ITrainInterface():
 
 
 class Training():
-    """Class that contains all necessary ingredients to train a pytorch
-    model. To start training simple call the instantiated object with the
-    desired number of epoch
+    """A Class that contains all necessary ingredients to train a pytorch
+    model. To start training, simply call the instantiated object with the
+    desired number of epochs, e.g.:
 
-    e.g.:
     training = Training(...)
     training(100) # train for 100 epochs
 
@@ -95,53 +94,62 @@ class Training():
         Parameters
         ----------
         optimizer : pytorch optimizer
-            controls the weight updates, see get_optimizer for more information
+            Controls the weight updates, see get_optimizer for more information
         data_loader : pytorch dataloader
-            when iterated over in a for loop, data are returned in batches.
+            When iterated over in a for loop, data are returned in batches.
             Note that the for loop is executed as
             'for sample in data_loader:'
-            You need to specify what sample actually is in the training-
+            You need to specify what a sample actually is in the training-
             interface.
         train_interface : ITrainInterface
-            computes the loss of a batch, see method _train_step
+            Computes the loss of a batch, see method _train_step
         save_steps : int, optional
-            every 'save_steps' the model is save to 'save_path'. If 0, the
+            Every 'save_steps' the model is saved to 'save_path'. If 0, the
             model is only saved on the end of the training. By default -1,
             which means the model is not saved at all (if early_stopping is 
             None).
         save_path : str, optional
-            where to save the model, by default None. Needs to be specified if
-            save_steps != 1
+            Where to save the model, by default None. Needs to be specified if
+            save_steps != 1. Note that the model is always overwritten, i.e.,
+            there is only one '[model].pt' file after training at save_path.
         printer : Printer (pt_train_printer), optional
             Prints current training values to terminal and possibly a
-            log.json file. By default None, nothing is printed or logged.
+            log.json file. By default None, nothing is logged.
         scheduler : pytorch scheduler, optional
-            updates the learning rate according to some schedule. By default 
+            Updates the learning rate according to some schedule. By default 
             None, no scheduling is used.
         clip : float, optional
-            gradient clipping, by default None, no gradient clipping
+            Gradient clipping, by default None, no gradient clipping
         retain_graph : bool, optional
-            needed for special backpropagation function, see pytorch 
+            Needed for special backpropagation functions, see pytorch 
             documentation for more information. By default False.
         val_data_loader : pytorch data_loader, optional
-            can be used to validation the network performance. These data are
-            not used for training (but maybe early stopping). The model is in
-            eval-mode, when those data are applied.
+            Can be used to validate/test the network performance. These data
+            are not used for training (but maybe early stopping). The model is
+            in eval-mode, when those data are processed. The val_step of the
+            TrainingInterface is applied to these data.
             By default None, no validation is done.
         early_stopping : EarlyStopping object, optional
-            save the model based on a specified metric, each time the best 
+            Save the model based on a specified metric, each time the best 
             value of this metric is reached. By default None, no early stopping
         validation_only: bool 
-            when called, only the validation steps are computed
+            When called, only the validation steps are computed. Note that, if
+            the flag is set to true, the model is not trained.
         save_state_dict: save the model's state dict instead of the model
+        test_data_loader : pytorch data_loader, optional
+            Can be used to test the network performance. The model is
+            in eval-mode, when those data are processed. The test_step of the
+            TrainingInterface is applied to these data.
         batch_scheduler: BatchScheduler object
-            for scheduling algorithms that adjust the learning
+            For scheduling algorithms that adjust the learning
             rate within an epoch, instead each epoch's end.
         start_epoch: int 
-            set to a value other than 0 if training is resumed
+            Set to a value other than 0 if a previous training is resumed.
+            In this case, start_epoch should be set to the last epoch the
+            previous training stopped.
         time_log_printer: Printer (pt_train_printer)
-            if not none, several the time needed for different training steps
-            is logged and written by this logger
+            If not none, the time needed for different training steps
+            is logged and written by this logger.
 
         Returns
         -------
@@ -221,7 +229,6 @@ class Training():
         else:
             num_batches = len(self.data_loaders_['train'])
 
-        # TODO: if resume, compute the learning rate beforehand
         if self.start_ep > 0:
             if self.batch_scheduler is not None:
                 self._batch_schedule(
@@ -229,6 +236,7 @@ class Training():
                     self.data_loaders_['train'].batch_size
                 )
             if self.scheduler is not None:
+                # TODO: if resume, compute the learning rate beforehand
                 raise NotImplementedError
 
         print('STARTING TRAINING')
