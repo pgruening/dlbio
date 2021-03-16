@@ -10,7 +10,8 @@ AVAILABLE_GPUS = [0, 1, 2, 3]
 
 def run(param_generator, make_object,
         available_gpus=AVAILABLE_GPUS, num_tries=NUM_TRIES,
-        shuffle_params=True
+        shuffle_params=True,
+        do_not_check_free_gpus=False
         ):
     """Run a number of processes in parallel, while keeping all GPUs
     busy
@@ -23,9 +24,12 @@ def run(param_generator, make_object,
         function that returns a class object which is a training process
         process should implement __call__, set_timer and have a __name__ and
         start_time property.
+    do_not_check_free_gpus: bool
+        do not check if devices are currently used, default is False.
     """
     train_processes_ = []
-    current_available_gpus = check_for_free_gpus(available_gpus, verbose=True)
+    current_available_gpus = check_for_free_gpus(
+        available_gpus, do_not_check=do_not_check_free_gpus, verbose=True)
 
     for kwargs in param_generator:
         for try_num in range(num_tries):
@@ -65,10 +69,14 @@ def run(param_generator, make_object,
                 print(f'minutes needed: {minutes_needed}')
                 print(f'available gpus: {current_available_gpus}')
 
-                current_available_gpus = check_for_free_gpus(available_gpus)
+                current_available_gpus = check_for_free_gpus(
+                    available_gpus, do_not_check=do_not_check_free_gpus)
 
 
-def check_for_free_gpus(available_gpus, verbose=False):
+def check_for_free_gpus(available_gpus, verbose=False, do_not_check=False):
+    if do_not_check:
+        return available_gpus
+
     free_gpus = get_free_gpus()
     current_available_gpus = list(
         set(available_gpus).intersection(set(free_gpus))
