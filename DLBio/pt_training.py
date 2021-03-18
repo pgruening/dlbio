@@ -448,14 +448,10 @@ class Training():
                 is_save_intervall = False
 
             if is_last_epoch or is_save_intervall:
-                print(f'Saving {self.save_path}')
-                if self.save_state_dict:
-                    print('save as state dict')
-                    to_save = self.train_interface.model.state_dict()
-
-                    torch.save(
-                        to_save,
-                        self.save_path
+                _torch_save_model(
+                    self.train_interface.model,
+                    self.save_path,
+                    self.save_state_dict 
                     )
                 else:
                     torch.save(self.train_interface.model, self.save_path)
@@ -716,14 +712,18 @@ class EarlyStopping():
     def _update(self, value, model, save_path, save_state_dict):
         self.no_update_counter = 0
         self.current_val = value
+        _torch_save_model(model, save_path, save_state_dict)
+        
 
-        print(f'saving model: {save_path}')
-        if save_state_dict:
-            print('save as state dict')
-            to_save = model.state_dict()
-            torch.save(to_save, save_path)
-        else:
-            torch.save(model, save_path)
+def _torch_save_model(model, save_path, save_state_dict):
+    print(f'saving model: {save_path}')
+    if save_state_dict:
+        print('save as state dict')
+        to_save = model.state_dict()
+        torch.save(to_save, save_path)
+    else:
+        torch.save(model, save_path)
+    print('model saved.')
 
 
 def get_printer(print_intervall, log_file=None):
