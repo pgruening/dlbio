@@ -200,6 +200,7 @@ class Training():
 
         self.validation_only = validation_only
         if validation_only:
+            assert 'test' not in self.phases
             self.phases = ['validation']
             print('Running in validation only mode.')
 
@@ -216,6 +217,16 @@ class Training():
 
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
+
+        # check for right order of training phases
+        if 'train' in self.phases and 'validation' in self.phases:
+            assert self.phases.index('train') == 0
+            assert self.phases.index('validation') == 1
+        if 'validation' in self.phases and 'test' in self.phases:
+            assert self.phases.index('validation') == 1
+            assert self.phases.index('test') == 2
+    
+
 
     def __call__(self, epochs_):
         """Train the model for a specified number of epochs
