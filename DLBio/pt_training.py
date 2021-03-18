@@ -193,6 +193,11 @@ class Training():
         if test_data_loader is not None:
             self.phases.append('test')
 
+        # there should be no instance with ['train', 'test']. For now ['train', 'val'] should be used instead
+        # maybe this needs to be changed in the future
+        if 'test' in self.phases:
+            assert 'validation' in self.phases, 'No combination train and test allowed.'
+
         self.validation_only = validation_only
         if validation_only:
             self.phases = ['validation']
