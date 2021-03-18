@@ -14,3 +14,4 @@ DLBio.egg-info/PKG-INFO
 DLBio.egg-info/top_level.txt
 DLBio.egg-info/SOURCES.txt
 debug.png
+test_logs/*
