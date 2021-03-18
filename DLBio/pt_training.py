@@ -699,6 +699,8 @@ class EarlyStopping():
 
         self.no_update_counter = 0.
         self.thres = epoch_thres
+        if self.thres < np.inf:
+            warnings.warn(f'Early stopping: training is stopped after {self.thres} unchanged epochs.')
 
         if get_max:
             self.current_val = -np.inf
