@@ -481,6 +481,11 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
         if unknown opt_id
     """
     if opt_id == 'SGD':
+        if 'momentum' not in kwargs.keys():
+            warnings.warn(f'Using default momentum for SGD: {.9}')
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for SGD {0.}')
+
         optimizer = optim.SGD(parameters,
                               lr=learning_rate,
                               momentum=kwargs.get('momentum', .9),
@@ -488,18 +493,25 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
                               nesterov=kwargs.get('nesterov', False)
                               )
     elif opt_id == 'Adam':
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for SGD {0.}')
+
         optimizer = optim.Adam(
             parameters,
             lr=learning_rate,
             weight_decay=kwargs.get('weight_decay', 0.)
         )
     elif opt_id == 'lamb':
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for SGD {0.001}')
         optimizer = Lamb(
             parameters,
             lr=learning_rate, weight_decay=kwargs.get('weight_decay', 0.001),
             betas=(kwargs.get('beta0', .9), kwargs.get('beta1', .999))
         )
     elif opt_id == 'AdaDelta':
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for SGD {0.}')
         optimizer = optim.Adadelta(
             parameters,
             lr=learning_rate,
