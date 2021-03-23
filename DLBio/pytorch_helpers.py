@@ -188,13 +188,20 @@ def get_lr(optimizer):
         return param_group['lr']
 
 
-def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False, map_location=None, from_par_gpu=False):
+def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_location=None, from_par_gpu=False):
     """Load a model with pt-file located at model_path and and options file
     located at options_path, using get_model_fcn.
 
     In your specific repo, you should create a 'load_model' function, that
     implements the specific get_model_fcn and uses this function to handle
-    the pytorch part. 
+    the pytorch part.
+
+    Note that only the state dict is loaded here. Even if the model as saved
+    as an entire model (torch.save(model, path))!
+
+    This function is only meant for strictly loading the same architecture.
+    If you want to somehow only want to load a subset or weights from a
+    different model, write a costum function.
 
     Parameters
     ----------
@@ -205,16 +212,28 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False
         path to a json file that contains an options dictionary, or the options
         object itself
     get_model_fcn : function(NamedTuple, str)
-        functions that, given an options object and a device loads a model
+        functions that, given an options object and a device, loads a model
         (from scratch)
     device : str
         Defines whether a cpu ('cpu') or gpu ('cuda:0') is used.
+    strict: boolean
+        Whether you are loading from a partial state_dict, 
+        which is missing some keys, or loading a state_dict with more keys
+        than the model that you are loading into, you can set the strict 
+        argument to False.
 
     Returns
     -------
     nn.Module
         a pytorch model with the weights taken from model_path
     """
+
+    def _change_key_name_from_data_parallel(model_sd):
+        new_dict = OrderedDict()
+        for key, value in model_sd.items():
+            new_key = key.replace('module.', '')
+            new_dict[new_key] = value
+        return new_dict
 
     if isinstance(options, str):
         options = load_json(options)
@@ -233,15 +252,13 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict=False
     if not isinstance(model_sd, OrderedDict):
         model_sd = model_sd.state_dict()
         if from_par_gpu:
-            raise NotImplementedError('TODO...')
+            model_sd = _change_key_name_from_data_parallel(model_sd)
     else:
         if from_par_gpu:
-            new_dict = OrderedDict()
-            for key, value in model_sd.items():
-                new_key = key.replace('module.', '')
-                new_dict[new_key] = value
-            model_sd = new_dict
+            model_sd = _change_key_name_from_data_parallel(model_sd)
 
-    model.load_state_dict(model_sd, strict=strict)
+    x = model.load_state_dict(model_sd, strict=strict)
+    if x.missing_keys:
+        raise RuntimeError('Missing keys detected')
 
     return model
