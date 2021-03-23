@@ -51,6 +51,9 @@ class ITrainInterface():
 
         The loss is used to update the weights of the model
 
+        returns list with loss, metrics, counters, functions
+        subsets like loss, metrics, counters and loss, metrics are possible
+
         """
         raise NotImplementedError('Implement to run training')
 
@@ -323,25 +326,23 @@ class Training():
         sample : anything provided by the data loader
             typically the sample x and the corresponding label
         current_phase : str
-            training or validation
+            training, validation, or test
 
         Returns
         -------
         float, dict
-            loss value that is used for gradient computation and a dictionary
-            with metrics.
+            loss value that is used for gradient computation and dictionaries
+            with metrics, counters, and functions
         """
         self.time_logger.start(current_phase + '_iteration_step')
         if current_phase == 'validation':
             with torch.no_grad():
-                #loss, metrics, counters = self.train_interface.val_step(sample)
                 output = self.train_interface.val_step(sample)
         elif current_phase == 'test':
             with torch.no_grad():
                 output = self.train_interface.test_step(sample)
 
         else:
-            #loss, metrics, counters = self.train_interface.train_step(sample)
             output = self.train_interface.train_step(sample)
 
         functions = None
@@ -390,13 +391,13 @@ class Training():
         Parameters
         ----------
         epoch : int
-            current epoch
+            Current epoch
         loss : float
-            current loss value
+            Current loss value
         metrics : dict
         current_phase : str
-            if the current phase is validation, all metrics/losses are renamed 
-            to val_[name]
+            If the current phase is validation, all metrics/losses/etc. are renamed 
+            from [name] to val_[name]. If the current phase is test, all they are renamed to test_[name]. 
 
         """
         self.time_logger.start(current_phase + '_update_printer')
@@ -420,7 +421,7 @@ class Training():
         self.printer.print_conditional()
 
     def _schedule(self, current_phase):
-        """update the scheduler after each epoch
+        """Update the scheduler after each training epoch.
         """
         if self.scheduler is not None:
             if current_phase == 'train':
@@ -429,7 +430,7 @@ class Training():
                 self.time_logger.stop('schedule')
 
     def _batch_schedule(self, current_phase, epoch, iteration, num_batches):
-        """update the scheduler after each batch
+        """Update the scheduler after each training batch.
         """
         if self.batch_scheduler is not None:
             if current_phase == 'train':
@@ -469,10 +470,7 @@ class Training():
                     self.save_path,
                     self.save_state_dict 
                     )
-                else:
-                    torch.save(self.train_interface.model, self.save_path)
             self.time_logger.stop('save')
-            print('saving done')
 
 
 def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
@@ -481,7 +479,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     Parameters
     ----------
     opt_id : str
-        which optimizer, e.g. SGD or Adam
+        Which optimizer, e.g., SGD or Adam
     parameters : model.parameters
         pytorch variables that shall be updated, usually model.parameters()
         is passed
@@ -587,12 +585,12 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
 
 def set_device(device=None):
     """Use if you have multiple GPUs, but you only want to use a subset.
-    Use the command nvidia-smi in the terminal for more information on your
+    Use the command 'nvidia-smi' in the terminal for more information on your
     pc's gpu setup
 
     Parameters
     ----------
-    device : int, optional
+    device : int or list of int, optional
         masks all devices but 'device'. By default None, all devices are
         visible
     """
@@ -757,6 +755,19 @@ def _torch_save_model(model, save_path, save_state_dict):
 
 
 def get_printer(print_intervall, log_file=None):
+    """Convenience function, to get a printer without import pt_train_printer. 
+    Note that only the basic keywords are passed on here!
+    Parameters
+    ----------
+    print_intervall : int
+        print to terminal after n batches, if -1: no printing
+    log_file : str, optional
+        path to a json file, by default None: no log-file is saved.
+
+    Returns
+    -------
+    Printer
+    """    
     return Printer(print_intervall, log_file=log_file)
 
 
