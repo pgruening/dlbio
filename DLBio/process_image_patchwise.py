@@ -53,7 +53,7 @@ def whole_image_segmentation(model, image, fast_prediction=False, batch_size=4):
                 return out
 
     # if the original image size is smaller than the input of the network
-    # the image is padded downwart and upward and cut back to shape later on
+    # the image is padded downward and upward and cut back to shape later on
     pad_right = max(0, input_patch_size['x'] - original_image_size['x'])
     pad_down = max(input_patch_size['y'] - original_image_size['y'], 0)
     padded_to_fit_input = False
@@ -300,7 +300,8 @@ def patchwise_image_segmentation(network_output_fcn,
         np.ceil(float(original_image_size['x']
                       ) / float(output_patch_size['x']))
     )
-
+    assert num_steps_y > 0
+    assert num_steps_x > 0
     # ------------- start of process -------------------------------------------
     patches_ = []
     for _i in range(num_steps_y):
