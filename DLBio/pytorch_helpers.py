@@ -10,6 +10,7 @@ import torch
 from recordtype import recordtype
 
 from .helpers import dict_to_options, load_json
+import warnings
 
 
 def get_free_gpus(thres=1024):
@@ -190,17 +191,18 @@ def get_lr(optimizer):
 
 def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_location=None, from_par_gpu=False):
     """Load a model with pt-file located at model_path and and options file
-    located at options_path, using get_model_fcn.
+    located at options_path, using get_model_fcn. Can also be used to get a
+    model from scratch.
 
     In your specific repo, you should create a 'load_model' function, that
     implements the specific get_model_fcn and uses this function to handle
     the pytorch part.
 
-    Note that only the state dict is loaded here. Even if the model as saved
+    Note that only the state dict is loaded here. Even if the model is saved
     as an entire model (torch.save(model, path))!
 
     This function is only meant for strictly loading the same architecture.
-    If you want to somehow only want to load a subset or weights from a
+    If you want to somehow only load a subset or weights from a
     different model, write a costum function.
 
     Parameters
@@ -221,11 +223,12 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_
         which is missing some keys, or loading a state_dict with more keys
         than the model that you are loading into, you can set the strict 
         argument to False.
+        This flag is deprecated.
 
     Returns
     -------
     nn.Module
-        a pytorch model with the weights taken from model_path
+        a pytorch model with the weights loaded from model_path
     """
 
     def _change_key_name_from_data_parallel(model_sd):
@@ -242,6 +245,7 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_
     model = get_model_fcn(options, device)
 
     if model_path is None:
+        warnings.warn('Model is loaded from scratch.')
         return model
 
     if map_location is not None:
