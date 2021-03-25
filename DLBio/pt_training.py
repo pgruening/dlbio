@@ -9,7 +9,6 @@ import cv2
 import numpy as np
 import torch
 import torch.optim as optim
-from pytorch_lamb import Lamb
 
 from DLBio.pt_train_printer import Printer
 from DLBio.pytorch_helpers import get_lr
@@ -228,8 +227,6 @@ class Training():
         if 'validation' in self.phases and 'test' in self.phases:
             assert self.phases.index('validation') == 1
             assert self.phases.index('test') == 2
-    
-
 
     def __call__(self, epochs_):
         """Train the model for a specified number of epochs
@@ -468,8 +465,8 @@ class Training():
                 _torch_save_model(
                     self.train_interface.model,
                     self.save_path,
-                    self.save_state_dict 
-                    )
+                    self.save_state_dict
+                )
             self.time_logger.stop('save')
 
 
@@ -516,6 +513,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             weight_decay=kwargs.get('weight_decay', 0.)
         )
     elif opt_id == 'lamb':
+        from pytorch_lamb import Lamb
         if 'weight_decay' not in kwargs.keys():
             warnings.warn(f'Using default weight_decay for SGD {0.001}')
         optimizer = Lamb(
@@ -714,7 +712,8 @@ class EarlyStopping():
         self.no_update_counter = 0.
         self.thres = epoch_thres
         if self.thres < np.inf:
-            warnings.warn(f'Early stopping: training is stopped after {self.thres} unchanged epochs.')
+            warnings.warn(
+                f'Early stopping: training is stopped after {self.thres} unchanged epochs.')
 
         if get_max:
             self.current_val = -np.inf
@@ -741,7 +740,7 @@ class EarlyStopping():
         self.no_update_counter = 0
         self.current_val = value
         _torch_save_model(model, save_path, save_state_dict)
-        
+
 
 def _torch_save_model(model, save_path, save_state_dict):
     print(f'saving model: {save_path}')
@@ -767,7 +766,7 @@ def get_printer(print_intervall, log_file=None):
     Returns
     -------
     Printer
-    """    
+    """
     return Printer(print_intervall, log_file=log_file)
 
 
