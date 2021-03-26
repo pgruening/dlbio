@@ -50,6 +50,12 @@ class Accuracy(IPrinterFcn):
         self.restart()
 
     def update(self, y_pred, y_gt):
+        assert y_pred.ndim == 2
+
+        assert y_gt.ndim <= 2
+        if y_gt.ndim == 2:
+            assert y_gt.shape[-1] == 1
+
         # get class with highest value
         y_pred = np.array(y_pred.detach().cpu())
         y_pred = np.argmax(y_pred, 1)
