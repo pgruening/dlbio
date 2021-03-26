@@ -46,7 +46,8 @@ class Classification(ITrainInterface):
 class Accuracy(IPrinterFcn):
     name = 'acc'
 
-    def __init__(self):
+    def __init__(self, debug_print_len=False):
+        self.print_len = debug_print_len
         self.restart()
 
     def update(self, y_pred, y_gt):
@@ -71,13 +72,25 @@ class Accuracy(IPrinterFcn):
     def __call__(self):
         x = np.concatenate(self.x)
         y = np.concatenate(self.y)
+
+        if self.print_len:
+            self._print_len(x, y)
+
         return (x == y).mean()
+
+    def _print_len(self, x, y):
+        print(f'Length self.x: {len(self.x)}')
+        print(f'Length self.y: {len(self.y)}')
+
+        print(f'shape x: {x.shape}')
+        print(f'shape y: {y.shape}')
 
 
 class ErrorRate(Accuracy):
     name = 'e_rate'
 
-    def __init__(self):
+    def __init__(self, debug_print_len=False):
+        self.print_len = debug_print_len
         self.restart()
 
     def __call__(self):
