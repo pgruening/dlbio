@@ -110,6 +110,25 @@ class ActivationGetter():
         self.out = output
 
 
+def walk(module):
+    """Walk through a nn.module/pytorch network recursively and return all sub-modules
+
+    Parameters
+    ----------
+    module : nn.Module
+        e.g. a pytorch network
+
+    Returns
+    -------
+    list of nn.Module
+        returns a list containing the module and all of the module's children
+    """
+    out = [module]
+    for tmp in module.children():
+        out += walk(tmp)
+    return out
+
+
 def get_device():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     return device
