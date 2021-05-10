@@ -579,14 +579,16 @@ def load_image(image_path, pre_processing_fcn):
     return image
 
 
-def to_uint8_image(image):
+def to_uint8_image(image, eps=0.):
     """Rescale and cast image to uint8 format
     so it can be written to a png or jpg file
 
     Parameters
     ----------
     image : numpy array
-      Image to transform
+        Image to transform
+    eps: float
+        add > 0 to prevent divide by zero errors
     Returns
     -------
     numpy array of type uint8
@@ -599,7 +601,7 @@ def to_uint8_image(image):
         image = image.astype('float32')
 
     image -= np.min(image)
-    image /= np.max(image)
+    image /= (np.max(image) + eps)
     return (255 * image).astype('uint8')
 
 
