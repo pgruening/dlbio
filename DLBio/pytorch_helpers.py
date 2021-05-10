@@ -1,5 +1,7 @@
 import json
 import subprocess
+import time
+import warnings
 from collections import OrderedDict
 from datetime import datetime
 from io import BytesIO
@@ -10,7 +12,55 @@ import torch
 from recordtype import recordtype
 
 from .helpers import dict_to_options, load_json
-import warnings
+
+
+def start_when_free(module_path, *, gpus, mode='all', sleep=5.):
+    """Run an execute-module once the gpus are free
+
+    Parameters
+    ----------
+    module_path : str
+        which module to run. No parameters are passed here
+    gpus : list of int
+        which gpus to check
+    mode : str, optional
+        start module if all or if at least one gpu is free, by default 'all'
+    sleep : float, optional
+        sleep time between checking if gpus are free, by default 5.
+
+    """
+    timer = [time.time()] * len(gpus)
+    ten_minutes = 10. * 60.
+
+    _print_timer = time.time()
+
+    def update_timer(timers, gpus):
+        free_gpus = get_free_gpus()
+        for idx in gpus:
+            # reset start time if gpu not free
+            if idx not in free_gpus:
+                timer[idx] = time.time()
+
+    def do_start(mode, timer, *, thres):
+        t_values = [time.time() - x for x in timer]
+        is_free = [t >= thres for t in t_values]
+        num_free = np.array(is_free).astype('int32').sum()
+
+        if mode == 'all':
+            return num_free == len(timer)
+        elif mode == 'any':
+            return num_free > 0
+
+    while not do_start(mode, timer, thres=ten_minutes):
+        update_timer(timer, gpus)
+        time.sleep(sleep)
+
+        if time.time() - _print_timer > 60:
+            print('Waiting on gpus. Timer in minutes:')
+            print([int((time.time() - x) / 60.) for x in timer])
+            _print_timer = time.time()
+
+    subprocess.call(['python', module_path])
 
 
 def get_free_gpus(thres=1024):
