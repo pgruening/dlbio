@@ -4,7 +4,6 @@ import time
 from multiprocessing import Process
 from .pytorch_helpers import get_free_gpus
 
-NUM_TRIES = 1
 AVAILABLE_GPUS = [0, 1, 2, 3]
 
 
