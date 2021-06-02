@@ -2,9 +2,15 @@ import random
 import subprocess
 import time
 from multiprocessing import Process
-from .pytorch_helpers import get_free_gpus
+from os.path import splitext
+
+import numpy as np
+from tqdm import tqdm
+
+from .pytorch_helpers import get_free_gpu_memory, get_free_gpus
 
 AVAILABLE_GPUS = [0, 1, 2, 3]
+GPU_MAN_THRES = 60.  # 60 seconds to block the gpu memory
 
 
 def run(param_generator, make_object,
@@ -32,7 +38,7 @@ def run(param_generator, make_object,
 
     for kwargs in param_generator:
         train_process = make_object(0, **kwargs)
-            train_processes_.append(train_process)
+        train_processes_.append(train_process)
 
     if shuffle_params:
         random.shuffle(train_processes_)
@@ -69,6 +75,82 @@ def run(param_generator, make_object,
 
                 current_available_gpus = check_for_free_gpus(
                     available_gpus, do_not_check=do_not_check_free_gpus)
+
+
+def run_bin_packing(param_generator, make_object,
+                    available_gpus=AVAILABLE_GPUS,
+                    log_file=None,
+                    max_num_processes=3
+                    ):
+
+    logger = TrainingLogger(log_file)
+    gpu_manager = GPUManager()
+    gpu_process_count = dict()
+    train_processes_ = []
+
+    print('Creating parameter list...')
+    for kwargs in tqdm(param_generator):
+        train_process = make_object(0, assert_mem_info=True, **kwargs)
+        train_processes_.append(train_process)
+    print('... done.')
+
+    # sort each process by memory usage (descending)
+    train_processes_ = sorted(
+        train_processes_, key=lambda x: x.mem_used, reverse=True
+    )
+    logger.log_processes(train_processes_)
+
+    active_processes_ = []
+    while train_processes_ or active_processes_:
+        # greedy add processes to gpu
+        for p_id, train_process in enumerate(train_processes_):
+            for gpu_idx, free_memory in gpu_manager.items():
+                if gpu_idx not in available_gpus:
+                    continue
+
+                if train_process.mem_used < free_memory:
+                    if gpu_idx not in gpu_process_count.keys():
+                        gpu_process_count[gpu_idx] = 0
+
+                    # do not exceed to maximum number of process on one gpu
+                    if gpu_process_count[gpu_idx] + 1 > max_num_processes:
+                        continue
+                    else:
+                        gpu_process_count[gpu_idx] += 1
+
+                    # block the amount of memory used for some time
+                    gpu_manager.block_gpu(gpu_idx, train_process.mem_used)
+                    # start process on free gpu
+                    train_processes_.remove(train_process)
+                    train_process.device = gpu_idx
+
+                    p = Process(target=train_process)
+                    train_process.set_timer()
+                    p.start()
+
+                    active_processes_.append((p, train_process, p_id, gpu_idx))
+
+                    print(f'starting process {train_process.__name__}')
+                    logger.log_start(
+                        p_id, train_process.mem_used, gpu_idx, free_memory
+                    )
+                    break
+
+        time.sleep(5.)
+
+        # manage active processes
+        for (p, train_process, p_id, gpu_idx) in active_processes_:
+            if not p.is_alive():
+                active_processes_.remove((p, train_process, p_id, gpu_idx))
+
+                gpu_process_count[gpu_idx] -= 1
+                assert gpu_process_count[gpu_idx] >= 0
+
+                minutes_needed = (time.time() - train_process.start_time) / 60.
+
+                print(f'process {train_process.__name__} is done.')
+                print(f'minutes needed: {minutes_needed}')
+                logger.log_end(p_id, minutes_needed)
 
 
 def check_for_free_gpus(available_gpus, verbose=False, do_not_check=False):
@@ -147,3 +229,84 @@ class ITrainingProcess():
 
     def set_timer(self):
         self.start_time = time.time()
+
+
+class GPUManager():
+    def __init__(self, time_threshold=GPU_MAN_THRES):
+        self.gpus = dict()
+        self.thres = time_threshold
+        gpu_mem = get_free_gpu_memory()
+
+        for gpu_idx, free_memory in gpu_mem.items():
+            # start with all gpus unblocked
+            self.gpus[gpu_idx] = {
+                'free_mem': free_memory, 'timer': time.time() - 2 * self.thres
+            }
+
+    def items(self):
+        for gpu_idx, gpu in self.gpus.items():
+            yield gpu_idx, self._get_mem(gpu_idx)
+
+    def _get_mem(self, gpu_idx):
+        # read values from nvidia-smi
+        smi_gpu_free_mem = get_free_gpu_memory()
+
+        gpu = self.gpus[gpu_idx]
+
+        # estimate time since the gpu was blocked
+        t = time.time() - gpu['timer']
+        if t > self.thres:
+            # gpu unblocked, use actual memory value
+            return smi_gpu_free_mem[gpu_idx]
+        else:
+            # gpu is still blocked, return estimated memory value
+            return gpu['free_mem']
+
+    def block_gpu(self, idx, expected_mem_usage):
+        # block gpu for a time to ensure that no new processes are added.
+        # During setup for a training process, nvidia-smi does not show the
+        # memory usage that is about to happen. The model needs to be loaded
+        # first, etc...
+
+        free_gpu_mem = self._get_mem(idx)
+
+        self.gpus[idx]['free_mem'] = free_gpu_mem - expected_mem_usage
+        self.gpus[idx]['timer'] = time.time()
+
+
+class TrainingLogger():
+    def __init__(self, path):
+        self.path = path
+        if self.path is not None:
+            assert splitext(self.path)[-1] == '.txt'
+            with open(self.path, 'w') as file:
+                file.write('Starting Training \n')
+
+    def log_processes(self, train_processes_):
+        if self.path is None:
+            return
+
+        mem_values = np.array([x.mem_used for x in train_processes_])
+        with open(self.path, 'a') as file:
+            file.write(f'Found {mem_values.shape[0]} processes. \n')
+            file.write(f'Mean exp. memory usage {mem_values.mean()} \n')
+            file.write(f'Max exp. memory usage {mem_values[0]} \n')
+            file.write(f'Min exp. memory usage {mem_values[-1]} \n')
+
+    def log_start(self, p_id, mem_used, gpu_idx, free_memory):
+        if self.path is None:
+            return
+
+        with open(self.path, 'a') as file:
+            file.write(
+                f'Add process {p_id} with exp. mem usage {mem_used} to GPU {gpu_idx} with free memory {free_memory} \n'
+            )
+
+    def log_end(self, p_id, minutes_needed):
+        if self.path is None:
+            return
+
+        with open(self.path, 'a') as file:
+            file.write(
+                f'Process {p_id} stopped after {minutes_needed} minutes. \n'
+            )
