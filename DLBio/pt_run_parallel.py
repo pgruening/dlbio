@@ -31,8 +31,7 @@ def run(param_generator, make_object,
         available_gpus, do_not_check=do_not_check_free_gpus, verbose=True)
 
     for kwargs in param_generator:
-        for try_num in range(num_tries):
-            train_process = make_object(try_num, **kwargs)
+        train_process = make_object(0, **kwargs)
             train_processes_.append(train_process)
 
     if shuffle_params:
