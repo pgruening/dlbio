@@ -92,6 +92,28 @@ def get_free_gpus(thres=1024):
     return free_gpu_indices
 
 
+def get_free_gpu_memory():
+    """Returns a dict gpu_idx: free memory in MByte. Data a read from 
+    nvidia-smi.
+
+    Returns
+    -------
+    dict of int: int
+    """
+    gpu_stats = subprocess.check_output(
+        ["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"])
+    gpu_df = pd.read_csv(BytesIO(gpu_stats),
+                         names=['memory.used', 'memory.free'],
+                         skiprows=1)
+    gpu_df['memory.free'] = gpu_df['memory.free'].map(
+        lambda x: int(x.rstrip(' [MiB]')))
+
+    free_gpu_memory = {
+        i: x for i, x in enumerate(list(gpu_df['memory.free']))
+    }
+    return free_gpu_memory
+
+
 class GetBlocks():
     """
     use like this:
