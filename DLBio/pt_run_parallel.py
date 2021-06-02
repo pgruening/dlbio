@@ -98,9 +98,23 @@ class MakeObject():
     def __init__(self, TrainingProcess):
         self.TrainingProcess = TrainingProcess
 
-    def __call__(self, try_num, **kwargs):
-        # try num is not really used anymore...
-        return self.TrainingProcess(**kwargs)
+    def __call__(self, try_num, assert_mem_info=False, **kwargs):
+        if assert_mem_info:
+            assert kwargs['mem_used'] is not None
+
+        if 'mem_used' not in kwargs.keys():
+            mem_used = None
+        else:
+            mem_used = kwargs.pop('mem_used')
+
+        # most TrainingProcesses do not have mem_used as an attribute.
+        # To be backwards compatible, mem_used is only set if it is an
+        # attribute in the Class
+        tp = self.TrainingProcess(**kwargs)
+        if hasattr(tp, 'mem_used'):
+            tp.mem_used = mem_used
+
+        return tp
 
 
 class ITrainingProcess():
@@ -109,6 +123,7 @@ class ITrainingProcess():
         # run subprocess.call with self.kwargs in __call__
         self.start_time = -1
         self.device = -1
+        self.mem_used = None
 
         self.__name__ = 'Give me a name!'
         self.module_name = 'some_name.py'
