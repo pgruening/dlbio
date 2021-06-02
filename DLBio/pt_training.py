@@ -581,7 +581,7 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
     return scheduler
 
 
-def set_device(device=None):
+def set_device(device=None, verbose=True):
     """Use if you have multiple GPUs, but you only want to use a subset.
     Use the command 'nvidia-smi' in the terminal for more information on your
     pc's gpu setup
@@ -598,7 +598,8 @@ def set_device(device=None):
         else:
             device = str(device)
         os.environ['CUDA_VISIBLE_DEVICES'] = device
-        print(f'using device {device}')
+        if verbose:
+            print(f'using device {device}')
 
 
 def set_random_seed(seed):
