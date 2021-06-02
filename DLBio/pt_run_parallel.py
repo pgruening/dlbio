@@ -8,7 +8,7 @@ AVAILABLE_GPUS = [0, 1, 2, 3]
 
 
 def run(param_generator, make_object,
-        available_gpus=AVAILABLE_GPUS, num_tries=NUM_TRIES,
+        available_gpus=AVAILABLE_GPUS,
         shuffle_params=True,
         do_not_check_free_gpus=False
         ):
