@@ -80,11 +80,16 @@ def run(param_generator, make_object,
 def run_bin_packing(param_generator, make_object,
                     available_gpus=AVAILABLE_GPUS,
                     log_file=None,
-                    max_num_processes=3
+                    max_num_processes=3,
+                    shuffle_params=False,
+                    setup_time=0.,
+                    time_threshold=GPU_MAN_THRES
                     ):
 
     logger = TrainingLogger(log_file)
-    gpu_manager = GPUManager()
+    gpu_manager = GPUManager(setup_time=setup_time,
+                             time_threshold=time_threshold
+                             )
     gpu_process_count = dict()
     train_processes_ = []
 
@@ -94,7 +99,12 @@ def run_bin_packing(param_generator, make_object,
         train_processes_.append(train_process)
     print('... done.')
 
-    # sort each process by memory usage (descending)
+    if shuffle_params:
+        random.shuffle(train_processes_)
+
+    # sort each process by memory usage (descending),
+    # note shuffle only makes sense when the memory usage is equal for most
+    # params
     train_processes_ = sorted(
         train_processes_, key=lambda x: x.mem_used, reverse=True
     )
@@ -232,9 +242,10 @@ class ITrainingProcess():
 
 
 class GPUManager():
-    def __init__(self, time_threshold=GPU_MAN_THRES):
+    def __init__(self, *, time_threshold, setup_time=0.):
         self.gpus = dict()
         self.thres = time_threshold
+        self.setup_time = setup_time
         gpu_mem = get_free_gpu_memory()
 
         for gpu_idx, free_memory in gpu_mem.items():
@@ -255,6 +266,11 @@ class GPUManager():
 
         # estimate time since the gpu was blocked
         t = time.time() - gpu['timer']
+
+        if t < self.setup_time:
+            # gpu is blocked entirely during setup time
+            return 0.
+
         if t > self.thres:
             # gpu unblocked, use actual memory value
             return smi_gpu_free_mem[gpu_idx]
