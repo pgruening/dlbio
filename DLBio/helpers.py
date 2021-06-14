@@ -138,7 +138,7 @@ def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
 def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False):
     # TODO: rename to find
     def is_rgx_match(rgx, x):
-        return bool(re.match(rgx, x))
+        return bool(re.fullmatch(rgx, x))
     outputs = []
     assert os.path.isdir(folder), f'folder not found: {folder}'
 
