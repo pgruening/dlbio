@@ -531,6 +531,8 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             rho=kwargs.get('rho', 0.9),
             eps=kwargs.get('eps', 1e-3)
         )
+    elif opt_id == 'RMSProb':
+        raise NotImplementedError
     else:
         raise ValueError(f'Unknown opt value: {opt_id}')
 
