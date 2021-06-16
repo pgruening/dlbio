@@ -532,7 +532,18 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             eps=kwargs.get('eps', 1e-3)
         )
     elif opt_id == 'RMSProb':
-        raise NotImplementedError
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for RMSprop {0.}')
+
+        optimizer = optim.RMSprop(
+            parameters,
+            lr = learning_rate,
+            alpha = kwargs.get('alpha', 0.99),
+            eps = kwargs.get('eps', 1e-08),
+            weight_decay = kwargs.get('weight_decay', 0.),
+            momentum = kwargs.get('momentum', 0.),
+            centered = kwargs.get('centered', False)
+        )
     else:
         raise ValueError(f'Unknown opt value: {opt_id}')
 
