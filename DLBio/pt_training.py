@@ -89,7 +89,7 @@ class Training():
             retain_graph=False, val_data_loader=None, early_stopping=None,
             validation_only=False, save_state_dict=False,
             test_data_loader=None, batch_scheduler=None, start_epoch=0,
-            time_log_printer=None
+            time_log_printer=None, stop_conditions=[]
     ):
         """Constructor
 
@@ -152,6 +152,10 @@ class Training():
         time_log_printer: Printer (pt_train_printer)
             If not none, the time needed for different training steps
             is logged and written by this logger.
+        stop_conditions: List of [IStopCondition]
+            Similar to early stopping, stops the training based on a
+            train phase metric (no val- or test metric). Use, for example, to
+            quickly stop processes where the training does not converge.
 
         Returns
         -------
@@ -166,6 +170,7 @@ class Training():
         self.scheduler = scheduler
         self.batch_scheduler = batch_scheduler
         self.early_stopping = early_stopping
+        self.stop_conditions = stop_conditions
 
         if printer is None:
             self.printer = Printer(100, None)
@@ -297,6 +302,11 @@ class Training():
                         self.save_path,
                         self.save_state_dict
                     )
+
+                if self.stop_conditions and current_phase == 'train':
+                    for sc in self.stop_conditions:
+                        do_stop = sc(epoch, self.printer.get_metrics())
+
                 self.printer.on_epoch_end()
 
                 self._schedule(current_phase)
@@ -743,6 +753,11 @@ class EarlyStopping():
         self.no_update_counter = 0
         self.current_val = value
         _torch_save_model(model, save_path, save_state_dict)
+
+
+class IStopCondition():
+    def __call__(self, epoch, metrics):
+        raise NotImplementedError
 
 
 def _torch_save_model(model, save_path, save_state_dict):
