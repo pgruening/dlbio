@@ -76,6 +76,8 @@ class Training():
     model. To start training, simply call the instantiated object with the
     desired number of epochs, e.g.:
 
+    TODO: 'add_do_not_update' boolean for SAM optimization
+
     training = Training(...)
     training(100) # train for 100 epochs
 
