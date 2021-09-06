@@ -1,3 +1,4 @@
+import copy
 import random
 import subprocess
 import time
@@ -5,9 +6,12 @@ from multiprocessing import Process
 from os.path import splitext
 
 import numpy as np
+import torch
 from tqdm import tqdm
 
-from .pytorch_helpers import get_free_gpu_memory, get_free_gpus
+from .helpers import dict_to_options
+from .pt_training import set_device
+from .pytorch_helpers import get_device, get_free_gpu_memory, get_free_gpus
 
 AVAILABLE_GPUS = [0, 1, 2, 3]
 GPU_MAN_THRES = 60.  # 60 seconds to block the gpu memory
@@ -83,7 +87,8 @@ def run_bin_packing(param_generator, make_object,
                     max_num_processes=3,
                     shuffle_params=False,
                     setup_time=0.,
-                    time_threshold=GPU_MAN_THRES
+                    time_threshold=GPU_MAN_THRES,
+                    max_num_process_search=10000
                     ):
 
     logger = TrainingLogger(log_file)
@@ -114,6 +119,10 @@ def run_bin_packing(param_generator, make_object,
     while train_processes_ or active_processes_:
         # greedy add processes to gpu
         for p_id, train_process in enumerate(train_processes_):
+            # note that search through the processes can take a lot of time
+            # if you only run short processes, there is a lot of idle time
+            if p_id > max_num_process_search:
+                break
             for gpu_idx, free_memory in gpu_manager.items():
                 if gpu_idx not in available_gpus:
                     continue
@@ -146,7 +155,7 @@ def run_bin_packing(param_generator, make_object,
                     )
                     break
 
-        time.sleep(5.)
+        time.sleep(1.)
 
         # manage active processes
         for (p, train_process, p_id, gpu_idx) in active_processes_:
@@ -326,3 +335,29 @@ class TrainingLogger():
             file.write(
                 f'Process {p_id} stopped after {minutes_needed} minutes. \n'
             )
+
+
+def predict_needed_gpu_memory(options, *, input_shape, device, load_model_fcn, factor=2.1, num_tests=3):
+    # changes to the options object here should not be saved to the actual object
+    options = copy.deepcopy(options)
+
+    if isinstance(options, dict):
+        # initialize a new model
+        options['model_path'] = None
+        options = dict_to_options(options)
+
+    if device is not None:
+        set_device(device, verbose=False)
+
+    model = load_model_fcn(options, get_device())
+
+    torch.cuda.reset_max_memory_allocated()
+    for _ in range(num_tests):
+        x = torch.rand(*input_shape).to(get_device())
+        model(x)
+
+    fwd_memory_used = torch.cuda.max_memory_allocated()
+    torch.cuda.empty_cache()
+
+    # return as MegaByte
+    return factor * fwd_memory_used / 1e6
