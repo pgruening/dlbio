@@ -135,7 +135,7 @@ def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
             assert ctr < max_num_files, 'too many files copied.'
 
 
-def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False):
+def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_path=False, depth=None):
     # TODO: rename to find
     def is_rgx_match(rgx, x):
         return bool(re.fullmatch(rgx, x))
@@ -143,6 +143,15 @@ def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_pa
     assert os.path.isdir(folder), f'folder not found: {folder}'
 
     for root, dirs_, files_ in os.walk(folder):
+        if depth is not None:
+            # Don't search to deep into the folder tree
+            # remove base path
+            tmp = root[len(folder):]
+            # count folders
+            current_depth = len(tmp.split('/')) - 1
+            if current_depth > depth:
+                continue
+
         if search_which == 'files':
             to_search = files_
         elif search_which == 'dirs':
