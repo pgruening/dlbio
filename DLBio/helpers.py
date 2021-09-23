@@ -67,6 +67,24 @@ def load_json(file_path):
     return out
 
 
+def get_sub_dataframe(df, cols_and_vals):
+    df = df.copy()
+    where_and = np.ones(df.shape[0]) > 0
+    for key, values in cols_and_vals.items():
+        if isinstance(values, list):
+            _where_or = np.ones(df.shape[0]) == 0
+            for v in values:
+                tmp = np.array(df[key] == v)
+                _where_or = np.logical_or(_where_or, tmp)
+        else:
+            v = values
+            _where_or = np.array(df[key] == v)
+
+        where_and = np.logical_and(where_and, _where_or)
+
+    return df[where_and]
+
+
 def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
     """Copies the source files of the current working dir to out_folder
 
