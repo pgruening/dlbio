@@ -70,6 +70,13 @@ class ITrainInterface():
         # usually exactly the same as the train step
         return self.val_step(*args, **kwargs)
 
+    def after_training_process(self, *args, **kwargs):
+        """
+        Use this if you want to run a specific process after the training that
+        depends on the model
+        """
+        pass
+
 
 class Training():
     """A Class that contains all necessary ingredients to train a pytorch
@@ -430,20 +437,18 @@ class Training():
     def _schedule(self, current_phase):
         """Update the scheduler after each training epoch.
         """
-        if self.scheduler is not None:
-            if current_phase == 'train':
-                self.time_logger.start('schedule')
-                self.scheduler.step()
-                self.time_logger.stop('schedule')
+        if self.scheduler is not None and current_phase == 'train':
+            self.time_logger.start('schedule')
+            self.scheduler.step()
+            self.time_logger.stop('schedule')
 
     def _batch_schedule(self, current_phase, epoch, iteration, num_batches):
         """Update the scheduler after each training batch.
         """
-        if self.batch_scheduler is not None:
-            if current_phase == 'train':
-                self.time_logger.start('batch_schedule')
-                self.batch_scheduler.step(epoch, iteration, num_batches)
-                self.time_logger.stop('batch_schedule')
+        if self.batch_scheduler is not None and current_phase == 'train':
+            self.time_logger.start('batch_schedule')
+            self.batch_scheduler.step(epoch, iteration, num_batches)
+            self.time_logger.stop('batch_schedule')
 
     def _save(self, epoch, epochs_, current_phase):
         """save the model to model path every 'save_steps' epochs.
@@ -472,7 +477,7 @@ class Training():
                 is_save_intervall = False
 
             if is_last_epoch or is_save_intervall:
-                _torch_save_model(
+                torch_save_model(
                     self.train_interface.model,
                     self.save_path,
                     self.save_state_dict
@@ -752,7 +757,7 @@ class EarlyStopping():
     def _update(self, value, model, save_path, save_state_dict):
         self.no_update_counter = 0
         self.current_val = value
-        _torch_save_model(model, save_path, save_state_dict)
+        torch_save_model(model, save_path, save_state_dict)
 
 
 class IStopCondition():
@@ -760,7 +765,7 @@ class IStopCondition():
         raise NotImplementedError
 
 
-def _torch_save_model(model, save_path, save_state_dict):
+def torch_save_model(model, save_path, save_state_dict):
     print(f'saving model: {save_path}')
     if save_state_dict:
         print('save as state dict')
