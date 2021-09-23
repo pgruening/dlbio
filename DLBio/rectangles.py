@@ -29,10 +29,7 @@ class IRectangle(object):
         self.id = kwargs.pop('id', None)
         self.confidence = kwargs.pop('confidence', -1.0)
 
-        if len(kwargs.keys()) > 0:
-            warnings.warn(
-                'Found ununsed keys: {}'.format(kwargs.keys())
-            )
+        self.meta = kwargs
 
     def __repr__(self):
         return '{}: {}'.format(self.__class__.__name__, self.__dict__)
@@ -156,7 +153,7 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
         self.type_id = kwargs.pop('type_id', 'unknown')
         super(ViewableTopLeftRectangle, self).__init__(**kwargs)
 
-    def add_cv_rectangle(self, image, color=None, write_confidence=True, **kwargs):
+    def add_cv_rectangle(self, image, color=None, write_confidence=True, thickness=1, **kwargs):
         """Draw a rectangle on the image via openCV
 
         Parameters
@@ -166,12 +163,15 @@ class ViewableTopLeftRectangle(TopLeftRectangle):
         if color is None:
             color = self.color
 
-        cv2.rectangle(
-            image,
-            (self.x, self.y),
-            (self.x + self.w, self.y + self.h),
-            color
-        )
+        start_point = (int(self.x), int(self.y))
+        end_point = (int(self.x) + int(self.w), int(self.y) + int(self.h))
+
+        # This function can raise stupid error comments:
+        # TypeError: function takes exactly 4 arguments (2 given)
+        # usually means your inputs are not int32
+        # Note that for this function, numpy.astype('int') is not the same
+        # as int(x)
+        cv2.rectangle(image, start_point, end_point, color, thickness)
 
         if self.confidence != -1.0 and write_confidence:
             off_x = kwargs.get('off_x', 0)
