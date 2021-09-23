@@ -84,7 +84,7 @@ def run(param_generator, make_object,
 def run_bin_packing(param_generator, make_object,
                     available_gpus=AVAILABLE_GPUS,
                     log_file=None,
-                    max_num_processes=3,
+                    max_num_processes_per_gpu=3,
                     shuffle_params=False,
                     setup_time=0.,
                     time_threshold=GPU_MAN_THRES,
@@ -95,7 +95,7 @@ def run_bin_packing(param_generator, make_object,
     gpu_manager = GPUManager(setup_time=setup_time,
                              time_threshold=time_threshold
                              )
-    gpu_process_count = dict()
+    gpu_process_count = {}
     train_processes_ = []
 
     print('Creating parameter list...')
@@ -132,7 +132,7 @@ def run_bin_packing(param_generator, make_object,
                         gpu_process_count[gpu_idx] = 0
 
                     # do not exceed to maximum number of process on one gpu
-                    if gpu_process_count[gpu_idx] + 1 > max_num_processes:
+                    if gpu_process_count[gpu_idx] + 1 > max_num_processes_per_gpu:
                         continue
                     else:
                         gpu_process_count[gpu_idx] += 1
@@ -227,17 +227,18 @@ class ITrainingProcess():
 
         self.__name__ = 'Give me a name!'
         self.module_name = 'some_name.py'
-        self.kwargs = dict()
+        self.kwargs = {}
 
     def __call__(self):
         call_str = ['python', self.module_name]
         for key, value in self.kwargs.items():
             call_str += [f'--{key}']
             if value is not None:
-                if isinstance(value, list):
-                    call_str += [f'{x}' for x in value]
-                else:
-                    call_str += [f'{value}']
+                call_str += (
+                    [f'{x}' for x in value]
+                    if isinstance(value, list)
+                    else [f'{value}']
+                )
 
         # NOTE: make sure the called subprocess has this property
         if self.device is not None:
@@ -252,7 +253,7 @@ class ITrainingProcess():
 
 class GPUManager():
     def __init__(self, *, time_threshold, setup_time=0.):
-        self.gpus = dict()
+        self.gpus = {}
         self.thres = time_threshold
         self.setup_time = setup_time
         gpu_mem = get_free_gpu_memory()
