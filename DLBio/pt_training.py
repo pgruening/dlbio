@@ -360,6 +360,13 @@ class Training():
     def _update_weights(self, loss):
         """Compute gradient and apply backpropagation
 
+        from:
+        https://discuss.pytorch.org/t/what-step-backward-and-zero-grad-do/33301
+        Hopefully, you use them in the other order - opt.zero_grad(), loss.backward(), opt.step().
+        zero_grad clears old gradients from the last step (otherwise you’d just accumulate the gradients from all loss.backward() calls).
+        loss.backward() computes the derivative of the loss w.r.t. the parameters (or anything requiring gradients) using backpropagation.
+        opt.step() causes the optimizer to take a step based on the gradients of the parameters.
+
         Parameters
         ----------
         loss : float
