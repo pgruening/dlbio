@@ -83,6 +83,8 @@ class Training():
     model. To start training, simply call the instantiated object with the
     desired number of epochs, e.g.:
 
+    TODO: 'add_do_not_update' boolean for SAM optimization
+
     training = Training(...)
     training(100) # train for 100 epochs
 
@@ -375,6 +377,13 @@ class Training():
     def _update_weights(self, loss):
         """Compute gradient and apply backpropagation
 
+        from:
+        https://discuss.pytorch.org/t/what-step-backward-and-zero-grad-do/33301
+        Hopefully, you use them in the other order - opt.zero_grad(), loss.backward(), opt.step().
+        zero_grad clears old gradients from the last step (otherwise you’d just accumulate the gradients from all loss.backward() calls).
+        loss.backward() computes the derivative of the loss w.r.t. the parameters (or anything requiring gradients) using backpropagation.
+        opt.step() causes the optimizer to take a step based on the gradients of the parameters.
+
         Parameters
         ----------
         loss : float
@@ -547,7 +556,18 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             eps=kwargs.get('eps', 1e-3)
         )
     elif opt_id == 'RMSProb':
-        raise NotImplementedError
+        if 'weight_decay' not in kwargs.keys():
+            warnings.warn(f'Using default weight_decay for RMSprop {0.}')
+
+        optimizer = optim.RMSprop(
+            parameters,
+            lr = learning_rate,
+            alpha = kwargs.get('alpha', 0.99),
+            eps = kwargs.get('eps', 1e-08),
+            weight_decay = kwargs.get('weight_decay', 0.),
+            momentum = kwargs.get('momentum', 0.),
+            centered = kwargs.get('centered', False)
+        )
     else:
         raise ValueError(f'Unknown opt value: {opt_id}')
 
