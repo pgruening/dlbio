@@ -611,7 +611,7 @@ def set_device(device=None, verbose=True):
     """
     if device is not None:
         if isinstance(device, list):
-            device = ','.join([str(x) for x in device])
+            device = ','.join(str(x) for x in device)
         else:
             device = str(device)
         os.environ['CUDA_VISIBLE_DEVICES'] = device
