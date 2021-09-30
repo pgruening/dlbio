@@ -20,7 +20,8 @@ GPU_MAN_THRES = 60.  # 60 seconds to block the gpu memory
 def run(param_generator, make_object,
         available_gpus=AVAILABLE_GPUS,
         shuffle_params=True,
-        do_not_check_free_gpus=False
+        do_not_check_free_gpus=False,
+        parallel_mode=False
         ):
     """Run a number of processes in parallel, while keeping all GPUs
     busy
@@ -36,6 +37,12 @@ def run(param_generator, make_object,
     do_not_check_free_gpus: bool
         do not check if devices are currently used, default is False.
     """
+
+    if parallel_mode:
+        assert do_not_check_free_gpus, 'not implemented yet'
+        for gpu in available_gpus:
+            assert isinstance(gpu, list)
+
     train_processes_ = []
     current_available_gpus = check_for_free_gpus(
         available_gpus, do_not_check=do_not_check_free_gpus, verbose=True)
@@ -202,11 +209,9 @@ class MakeObject():
         if assert_mem_info:
             assert kwargs['mem_used'] is not None
 
-        if 'mem_used' not in kwargs.keys():
-            mem_used = None
-        else:
-            mem_used = kwargs.pop('mem_used')
-
+        mem_used = (
+            None if 'mem_used' not in kwargs.keys() else kwargs.pop('mem_used')
+        )
         # most TrainingProcesses do not have mem_used as an attribute.
         # To be backwards compatible, mem_used is only set if it is an
         # attribute in the Class
@@ -242,7 +247,10 @@ class ITrainingProcess():
 
         # NOTE: make sure the called subprocess has this property
         if self.device is not None:
-            call_str += ['--device', str(self.device)]
+            if isinstance(self.device, list):
+                call_str += ['--device'] + [str(x) for x in self.device]
+            else:
+                call_str += ['--device', str(self.device)]
 
         print(call_str)
         subprocess.call(call_str)
