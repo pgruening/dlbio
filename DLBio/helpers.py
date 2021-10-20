@@ -195,12 +195,7 @@ def search_in_all_subfolders(rgx, folder, search_which='files', match_on_full_pa
 
 
 def search_rgx(rgx, path):
-    found_items = []
-    for x in os.listdir(path):
-        if bool(re.match(rgx, x)):
-            found_items.append(x)
-
-    return found_items
+    return [x for x in os.listdir(path) if bool(re.match(rgx, x))]
 
 
 def get_from_module(py_module, bool_fcn):
