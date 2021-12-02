@@ -255,8 +255,12 @@ class Training():
                     self.data_loaders_['train'].batch_size
                 )
             if self.scheduler is not None:
-                # TODO: if resume, compute the learning rate beforehand
-                raise NotImplementedError
+                # https://discuss.pytorch.org/t/a-problem-occured-when-resuming-an-optimizer/28822
+                # "Would you like to use the scheduler as if it was already
+                # used for 100 epochs? If so you could set last_epoch=-1 in the
+                # instantiation and call the scheduler 100 times in a dummy
+                # for loop."
+                [self._schedule('train') for _ in range(self.start_ep - 1)]
 
         print('STARTING TRAINING')
         for epoch in range(self.start_ep, epochs_):
@@ -566,7 +570,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     return optimizer
 
 
-def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None, last_epoch=-1):
+def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
     """returns a pytorch scheduler
 
     Parameters
@@ -591,7 +595,6 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None, last_
         scheduler = optim.lr_scheduler.MultiStepLR(
             optimizer, fixed_steps,
             gamma=gamma,
-            last_epoch=last_epoch
         )
         print(f'fixed rate scheduling at: {fixed_steps}')
         return scheduler
@@ -605,7 +608,7 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None, last_
 
     scheduler = optim.lr_scheduler.StepLR(
         optimizer, step_size,
-        gamma=gamma, last_epoch=last_epoch
+        gamma=gamma
     )
 
     return scheduler
