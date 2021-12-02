@@ -181,11 +181,7 @@ class Training():
         self.early_stopping = early_stopping
         self.stop_conditions = stop_conditions
 
-        if printer is None:
-            self.printer = Printer(100, None)
-        else:
-            self.printer = printer
-
+        self.printer = Printer(100, None) if printer is None else printer
         self.time_log_printer = time_log_printer
         self.time_logger = TimeLogger(is_active=(time_log_printer is not None))
 
@@ -226,11 +222,7 @@ class Training():
             'test': test_data_loader
         }
 
-        if start_epoch > 0:
-            self.start_ep = start_epoch + 1
-        else:
-            self.start_ep = 0
-
+        self.start_ep = start_epoch + 1 if start_epoch > 0 else 0
         if not torch.cuda.is_available():
             warnings.warn('No GPU detected. Training can be slow.')
 
@@ -254,11 +246,8 @@ class Training():
 
         do_stop = False
 
-        if self.validation_only:
-            num_batches = 0
-        else:
-            num_batches = len(self.data_loaders_['train'])
-
+        num_batches = 0 if self.validation_only else len(
+            self.data_loaders_['train'])
         if self.start_ep > 0:
             if self.batch_scheduler is not None:
                 self._batch_schedule(
@@ -577,7 +566,7 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     return optimizer
 
 
-def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
+def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None, last_epoch=-1):
     """returns a pytorch scheduler
 
     Parameters
@@ -601,7 +590,8 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
         fixed_steps = [int(x) for x in fixed_steps]
         scheduler = optim.lr_scheduler.MultiStepLR(
             optimizer, fixed_steps,
-            gamma=gamma
+            gamma=gamma,
+            last_epoch=last_epoch
         )
         print(f'fixed rate scheduling at: {fixed_steps}')
         return scheduler
@@ -615,7 +605,7 @@ def get_scheduler(lr_steps, epochs, optimizer, gamma=.1, fixed_steps=None):
 
     scheduler = optim.lr_scheduler.StepLR(
         optimizer, step_size,
-        gamma=gamma, last_epoch=-1
+        gamma=gamma, last_epoch=last_epoch
     )
 
     return scheduler
