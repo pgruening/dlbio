@@ -67,18 +67,41 @@ def load_json(file_path):
     return out
 
 
-def get_sub_dataframe(df, cols_and_vals):
+def get_sub_dataframe(df, cols_and_vals, bool_fcn=None):
+    """Select a sub-dataframe according to cols_and_val, and maybe a specified
+    boolean function. Each key of cols_and_val denotes one column that is used
+    for the selection process. Only rows are kept where the dataframe values at
+    key are equal to the values in cols_and_val[key].
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    cols_and_vals : dict {key:obj} or {key:[obj1, obj2, ...]}
+        keys correspond to the respective df columns. By default, a df-row is 
+        kept if its value at key is equal to obj or in the list 
+        [obj1, obj2, ...]
+    bool_fcn : function that returns bool, optional
+        function that returns a boolean based on the dataframe column as first
+        input and the value as second input. 
+    """
+    def select(df_column, value):
+        if bool_fcn is None:
+            return df_column == value
+        else:
+            return bool_fcn(df_column, value)
+
     df = df.copy()
     where_and = np.ones(df.shape[0]) > 0
     for key, values in cols_and_vals.items():
+        # select all rows i where df[key][i] in values
         if isinstance(values, list):
             _where_or = np.ones(df.shape[0]) == 0
             for v in values:
-                tmp = np.array(df[key] == v)
+                tmp = np.array(select(df[key], v))
                 _where_or = np.logical_or(_where_or, tmp)
         else:
             v = values
-            _where_or = np.array(df[key] == v)
+            _where_or = np.array(select(df[key], v))
 
         where_and = np.logical_and(where_and, _where_or)
 
