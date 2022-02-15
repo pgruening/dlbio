@@ -202,8 +202,7 @@ def walk(module):
 
 
 def get_device():
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    return device
+    return torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 def save_options(file_path, options):
@@ -329,6 +328,15 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_
             new_dict[new_key] = value
         return new_dict
 
+    def _check_if_trained_parallel(model_sd):
+        for key in model_sd.keys():
+            if 'module.' in key:
+                warnings.warn(
+                    ('WAS THIS MODEL TRAINED IN PARALLEL? '
+                     'Try using "from_par_gpu=True" to load the model.')
+                )
+                break
+
     if isinstance(options, str):
         options = load_json(options)
         options = dict_to_options(options)
@@ -352,8 +360,22 @@ def load_model_with_opt(model_path, options, get_model_fcn, device, strict, map_
         if from_par_gpu:
             model_sd = _change_key_name_from_data_parallel(model_sd)
 
+    _check_if_trained_parallel(model_sd)
     x = model.load_state_dict(model_sd, strict=strict)
     if x.missing_keys:
         raise RuntimeError('Missing keys detected')
 
     return model
+
+
+def all_to(X, device):
+    if not isinstance(X, (list, tuple)):
+        return X.to(device)
+    out = []
+    for x in X:
+        if isinstance(x, torch.Tensor):
+            out.append(x.to(device))
+        else:
+            out.append(x)
+
+    return out
