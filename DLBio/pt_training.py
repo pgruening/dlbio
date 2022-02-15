@@ -449,7 +449,14 @@ class Training():
         """
         if self.batch_scheduler is not None and current_phase == 'train':
             self.time_logger.start('batch_schedule')
-            self.batch_scheduler.step(epoch, iteration, num_batches)
+            if isinstance(self.batch_scheduler, BatchScheduler):
+                self.batch_scheduler.step(epoch, iteration, num_batches)
+            else:
+                try:
+                    self.batch_scheduler.step()
+                except:
+                    warnings.warn('Error in batch-scheduling')
+
             self.time_logger.stop('batch_schedule')
 
     def _save(self, epoch, epochs_, current_phase):
@@ -508,14 +515,14 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
     ValueError
         if unknown opt_id
     """
+    if 'weight_decay' not in kwargs.keys():
+        warnings.warn('Using default weight_decay for SGD 0.0')
     if opt_id == 'SGD':
         if 'momentum' not in kwargs.keys():
-            warnings.warn(f'Using default momentum for SGD: {.9}')
-        if 'weight_decay' not in kwargs.keys():
-            warnings.warn(f'Using default weight_decay for SGD {0.}')
+            warnings.warn('Using default momentum for SGD: 0.9')
         nesterov = kwargs.get('nesterov', False)
         if nesterov:
-            warnings.warn(f'Using nesterov momentum')
+            warnings.warn('Using nesterov momentum')
 
         optimizer = optim.SGD(parameters,
                               lr=learning_rate,
@@ -524,26 +531,27 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
                               nesterov=nesterov
                               )
     elif opt_id == 'Adam':
-        if 'weight_decay' not in kwargs.keys():
-            warnings.warn(f'Using default weight_decay for SGD {0.}')
 
         optimizer = optim.Adam(
             parameters,
             lr=learning_rate,
             weight_decay=kwargs.get('weight_decay', 0.)
         )
+    elif opt_id == 'Adam-W':
+
+        optimizer = optim.AdamW(
+            parameters,
+            lr=learning_rate,
+            weight_decay=kwargs.get('weight_decay', 0.)
+        )
     elif opt_id == 'lamb':
         from pytorch_lamb import Lamb
-        if 'weight_decay' not in kwargs.keys():
-            warnings.warn(f'Using default weight_decay for SGD {0.001}')
         optimizer = Lamb(
             parameters,
             lr=learning_rate, weight_decay=kwargs.get('weight_decay', 0.001),
             betas=(kwargs.get('beta0', .9), kwargs.get('beta1', .999))
         )
     elif opt_id == 'AdaDelta':
-        if 'weight_decay' not in kwargs.keys():
-            warnings.warn(f'Using default weight_decay for SGD {0.}')
         optimizer = optim.Adadelta(
             parameters,
             lr=learning_rate,
@@ -552,8 +560,6 @@ def get_optimizer(opt_id, parameters, learning_rate, **kwargs):
             eps=kwargs.get('eps', 1e-3)
         )
     elif opt_id == 'RMSProb':
-        if 'weight_decay' not in kwargs.keys():
-            warnings.warn(f'Using default weight_decay for RMSprop {0.}')
 
         optimizer = optim.RMSprop(
             parameters,
