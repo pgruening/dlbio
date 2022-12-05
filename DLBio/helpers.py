@@ -67,7 +67,7 @@ def load_json(file_path):
     return out
 
 
-def get_sub_dataframe(df, cols_and_vals, bool_fcn=None):
+def get_sub_dataframe(df, cols_and_vals, bool_fcn=None, return_where=False):
     """Select a sub-dataframe according to cols_and_val, and maybe a specified
     boolean function. Each key of cols_and_val denotes one column that is used
     for the selection process. Only rows are kept where the dataframe values at
@@ -82,13 +82,15 @@ def get_sub_dataframe(df, cols_and_vals, bool_fcn=None):
         [obj1, obj2, ...]
     bool_fcn : function that returns bool, optional
         function that returns a boolean based on the dataframe column as first
-        input and the value as second input. 
+        input and the value as second input, and key as third input. 
+    return_where: bool
+        return the boolean list instead of the the reduced dataframe
     """
-    def select(df_column, value):
+    def select(df_column, value, key):
         if bool_fcn is None:
             return df_column == value
         else:
-            return bool_fcn(df_column, value)
+            return bool_fcn(df_column, value, key)
 
     df = df.copy()
     where_and = np.ones(df.shape[0]) > 0
@@ -97,15 +99,18 @@ def get_sub_dataframe(df, cols_and_vals, bool_fcn=None):
         if isinstance(values, list):
             _where_or = np.ones(df.shape[0]) == 0
             for v in values:
-                tmp = np.array(select(df[key], v))
+                tmp = np.array(select(df[key], v, key))
                 _where_or = np.logical_or(_where_or, tmp)
         else:
             v = values
-            _where_or = np.array(select(df[key], v))
+            _where_or = np.array(select(df[key], v, key))
 
         where_and = np.logical_and(where_and, _where_or)
 
-    return df[where_and]
+    if return_where:
+        return where_and
+    else:
+        return df[where_and]
 
 
 def copy_source(out_folder, max_num_files=100, do_not_copy_folders=None):
