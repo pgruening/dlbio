@@ -9,6 +9,7 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 from recordtype import recordtype
 
 from .helpers import dict_to_options, load_json
