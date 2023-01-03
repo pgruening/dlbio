@@ -26,6 +26,7 @@ class Classification(ITrainInterface):
         self.counters = {
             'num_samples': image_counter
         }
+        self.metrics = {}
         self.d = device
 
     def train_step(self, sample):
@@ -39,7 +40,12 @@ class Classification(ITrainInterface):
         loss = self.xent_loss(pred, targets)
         assert not bool(torch.isnan(loss))
 
-        metrics = None
+        metrics = {}
+        metrics.update({k: v(pred, targets)
+                        for k, v in self.metrics.items()})
+        if not metrics:
+            metrics = None
+
         counters = {}
         counters.update({k: v(pred, targets)
                          for k, v in self.counters.items()})
